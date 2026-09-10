@@ -41,3 +41,11 @@ No evidence has been recorded yet.
 - Source: go test ./internal/rules/ -count=1 -v  + 两项变异测试
 - Summary: A2/A3/A4 全通过: 69 项测试 PASS/0 FAIL; 编译期拒绝 7 类错误源码, 运行期拒绝 18 类; 同种子 50 题逐字段相同; 6 条恶意规则 30s 内全被拒; 变异测试证明可复现性与超时中断均为承重(移除后分别失败与挂起)
 - Verifier: evidence/p2/ACCEPTANCE.md
+
+## EvidenceBundleDraft
+
+- Artifact key: p3-acceptance
+- Type: test-report
+- Source: go test ./... -count=1 (336 项) + 手工端到端 + 查库 + 浮点变异测试
+- Summary: A11/A14 通过。336 测试 0 失败。查库确认 client_is_correct 6 行全 true(原样保存未覆盖)而 server_is_correct 仅 3 行 true(权威重算)，分歧计数 3。变异测试证明无浮点判分被真实守护。修复 3 处设计缺陷(ASCII 文本矛盾/容差无字段)与 3 处实现或测试缺陷(fail 吞错误/硬编码迁移数/逗号分组预期)
+- Verifier: evidence/p3/ACCEPTANCE.md

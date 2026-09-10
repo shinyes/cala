@@ -1,19 +1,19 @@
 {
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
-  "currentTodo": "P3 项目与练习闭环",
+  "currentTodo": "P3.5 判分单一性与语料门禁",
   "completedTodos": [
-    "P2.1 沙箱配置(集中一处, 含递归与超时)",
-    "P2.2 规则编译(7 类错误源码被拒, 18 项语法支持)",
-    "P2.3 保存期校验(18 类行为错误被拒, 恶意规则 30s 内全拒)",
-    "P2.4 整轮出题与可复现性(A3 通过)",
-    "P2.5 验收(A2/A3/A4 全通过, 含两项变异测试取证)"
+    "P3.1 判分核心 internal/scoring(114 测试, 含浮点变异取证)",
+    "P3.2 容差迁移 0002 与项目数据访问",
+    "P3.3 项目 CRUD 与规则校验(含 fail() 吞错误缺陷修复)",
+    "P3.4 轮次出题与交卷(服务端重算+分歧告警)",
+    "P3.5 验收(A11/A14 通过, 336 测试全绿, 手工端到端+查库取证)"
   ],
-  "activeSlice": "P2 完成, 准备进入 P3 项目与练习闭环",
+  "activeSlice": "P3 完成, 准备进入 P3.5 跨端判分一致性",
   "evidenceRefs": [
-    "docs/aegis/work/2026-09-10-mental-math-app/evidence/p2/ACCEPTANCE.md"
+    "docs/aegis/work/2026-09-10-mental-math-app/evidence/p3/ACCEPTANCE.md"
   ],
-  "blockedOn": null,
-  "nextStep": "写 P3 计划: 项目 CRUD、/rounds/start、/rounds/complete、答案信封分类、服务端重算",
+  "blockedOn": "无",
+  "nextStep": "P3.5: 由 scoring 生成 >=10000 条语料 + Dart 镜像实现 + CI 一致性门禁",
   "updatedAt": "2026-09-10"
 }

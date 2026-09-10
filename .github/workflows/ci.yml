@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+# 同一分支的旧运行自动取消，节省额度
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (Go)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          # 从 go.mod 读取版本，避免与本地/镜像里的版本漂移
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      # CGO_ENABLED=0 与目标部署形态一致（modernc.org/sqlite 是纯 Go 实现）
+      - name: Build
+        working-directory: backend
+        env:
+          CGO_ENABLED: '0'
+        run: go build ./...
+
+      - name: Vet
+        working-directory: backend
+        run: go vet ./...
+
+      - name: Check formatting
+        working-directory: backend
+        run: |
+          unformatted="$(gofmt -l . | grep -v '^vendor/' || true)"
+          if [ -n "$unformatted" ]; then
+            echo "以下文件未通过 gofmt："
+            echo "$unformatted"
+            exit 1
+          fi
+
+      # 含 cmd/scorpus 的语料新鲜度门禁：若有人改了 internal/scoring
+      # 却没重新生成 app/test/scoring/corpus_generated.dart，这里会失败。
+      # 少了这道门禁，Dart 侧就会一直对着**旧**语料验证，跨端分歧被静默放过。
+      - name: Test
+        working-directory: backend
+        env:
+          CGO_ENABLED: '0'
+        run: go test ./... -count=1 -timeout 600s
+
+  frontend:
+    name: Frontend (Flutter)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          # 固定版本以保证 CI 可复现（而非「装最新的」导致某天突然变红）。
+          # 升级时请同时更新 app/pubspec.yaml 的 environment.flutter 下限。
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: app
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: app
+        run: flutter analyze
+
+      # 包含跨端判分一致性门禁（13872 条语料，任一分歧即失败）。
+      # 这是「界面显示答对、落库记为错」这一风险面的最终防线（验收标准 A12）。
+      - name: Test
+        working-directory: app
+        run: flutter test

@@ -139,3 +139,27 @@
 - New risk signals:
 - P2 新增局限: goja 无内存上限仍未解决(仅以超时+递归+输出长度上限收窄); 模块级初始化按题重复执行; 校验只跑 20 次属概率性防护
 - Advisory decision: continue
+
+## Checkpoint Update
+
+- Current todo: P3.5 判分单一性与语料门禁
+- Active slice: P3 完成, 准备进入 P3.5 跨端判分一致性
+- Completed todos:
+- P3.1 判分核心 internal/scoring(114 测试, 含浮点变异取证)
+- P3.2 容差迁移 0002 与项目数据访问
+- P3.3 项目 CRUD 与规则校验(含 fail() 吞错误缺陷修复)
+- P3.4 轮次出题与交卷(服务端重算+分歧告警)
+- P3.5 验收(A11/A14 通过, 336 测试全绿, 手工端到端+查库取证)
+- Evidence refs:
+- docs/aegis/work/2026-09-10-mental-math-app/evidence/p3/ACCEPTANCE.md
+- Blocked on: 无
+- Next step: P3.5: 由 scoring 生成 >=10000 条语料 + Dart 镜像实现 + CI 一致性门禁
+
+## DriftCheckDraft
+
+- Scope status: status: 完成规格§16 的 P3, 未越界到 P4/P5/P6
+- Compatibility status: status: 判分权威与分歧留痕已由解码取证; 清洗表单一下发(32 项+版本号); 快照不可变已验证; 作者契约未扩张
+- Retirement status: status: 无退役对象; 变异测试代码已还原; 明确拒绝 ORM/有理数库/metrics 库; 刻意不提供可单独调用的退订原语
+- New risk signals:
+- P3 遗留: A14 的统计部分待 P5; 前端判分一致性待 P3.5; 订阅导入退订待 P6
+- Advisory decision: continue

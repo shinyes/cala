@@ -20,6 +20,9 @@ version: 1.0.0+1
 
 environment:
   sdk: ^3.12.2
+  # 本项目使用的 Cupertino API 与 flutter_test 行为依赖此下限。
+  # CI 中固定安装的版本见 .github/workflows/ci.yml（两者需同步调整）。
+  flutter: ">=3.44.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -48,6 +51,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  test: ^1.31.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

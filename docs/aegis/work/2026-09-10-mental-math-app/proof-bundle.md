@@ -20,12 +20,13 @@ This proof bundle is an advisory Aegis Method Pack record. It does not determine
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-goja-spike-output.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p0-p1-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p2-acceptance.json
+- docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p3-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-spec-approved.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-sqlite-cascade-spike.json
 
 ## Drift Check
 
-- Scope status: status: 完成规格§16 的 P2, 未越界到 P3
-- Compatibility status: status: 作者契约未扩张(D1/D11); 沙箱四配置集中一处无第二份拷贝; 无 fallback/兼容分支
-- Retirement status: status: 无退役对象; 明确拒绝 VM 池与多函数契约; 变异测试用的临时代码已全部还原(grep MUTATION 无残留)
+- Scope status: status: 完成规格§16 的 P3, 未越界到 P4/P5/P6
+- Compatibility status: status: 判分权威与分歧留痕已由解码取证; 清洗表单一下发(32 项+版本号); 快照不可变已验证; 作者契约未扩张
+- Retirement status: status: 无退役对象; 变异测试代码已还原; 明确拒绝 ORM/有理数库/metrics 库; 刻意不提供可单独调用的退订原语
 - Advisory decision: continue

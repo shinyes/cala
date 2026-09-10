@@ -3,11 +3,11 @@
   "taskId": "2026-09-10-mental-math-app",
   "taskIntentRef": "docs/aegis/work/2026-09-10-mental-math-app/task-intent-draft.json",
   "baselineRefs": [],
-  "scopeStatus": "status: 完成规格§16 的 P2, 未越界到 P3",
-  "compatStatus": "status: 作者契约未扩张(D1/D11); 沙箱四配置集中一处无第二份拷贝; 无 fallback/兼容分支",
-  "retirementStatus": "status: 无退役对象; 明确拒绝 VM 池与多函数契约; 变异测试用的临时代码已全部还原(grep MUTATION 无残留)",
+  "scopeStatus": "status: 完成规格§16 的 P3, 未越界到 P4/P5/P6",
+  "compatStatus": "status: 判分权威与分歧留痕已由解码取证; 清洗表单一下发(32 项+版本号); 快照不可变已验证; 作者契约未扩张",
+  "retirementStatus": "status: 无退役对象; 变异测试代码已还原; 明确拒绝 ORM/有理数库/metrics 库; 刻意不提供可单独调用的退订原语",
   "newRiskSignals": [
-    "P2 新增局限: goja 无内存上限仍未解决(仅以超时+递归+输出长度上限收窄); 模块级初始化按题重复执行; 校验只跑 20 次属概率性防护"
+    "P3 遗留: A14 的统计部分待 P5; 前端判分一致性待 P3.5; 订阅导入退订待 P6"
   ],
   "decision": "continue"
 }
