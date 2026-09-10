@@ -26,10 +26,16 @@ func main() {
 	defer st.Close()
 
 	authSvc := service.NewAuthService(st, cfg.SessionTTL, cfg.RegistrationOpenDefault)
+	projectSvc := service.NewProjectService(st)
+	roundSvc := service.NewRoundService(st, projectSvc)
 	app := api.NewRouter(api.Deps{
-		Config:   cfg,
-		Store:    st,
-		Handlers: &api.Handlers{Auth: authSvc},
+		Config: cfg,
+		Store:  st,
+		Handlers: &api.Handlers{
+			Auth:     authSvc,
+			Projects: projectSvc,
+			Rounds:   roundSvc,
+		},
 	})
 
 	// 优雅关闭：容器收到 SIGTERM 时先停止接收新请求

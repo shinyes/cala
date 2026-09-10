@@ -12,7 +12,9 @@ import (
 
 // Handlers 持有各 API handler 的依赖。
 type Handlers struct {
-	Auth *service.AuthService
+	Auth     *service.AuthService
+	Projects *service.ProjectService
+	Rounds   *service.RoundService
 }
 
 // 请求体

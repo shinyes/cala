@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io/fs"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -37,9 +39,32 @@ func TestOpenAppliesMigrations(t *testing.T) {
 	if err := s.DB().QueryRow(`SELECT COUNT(*) FROM schema_migration`).Scan(&n); err != nil {
 		t.Fatalf("查询 schema_migration 失败: %v", err)
 	}
-	if n != 1 {
-		t.Errorf("已应用迁移数 = %d, 期望 1", n)
+	if want := embeddedMigrationCount(t); n != want {
+		t.Errorf("已应用迁移数 = %d, 期望 %d（应与内嵌的迁移文件数一致）", n, want)
 	}
+}
+
+// embeddedMigrationCount 返回内嵌迁移文件的数量。
+//
+// 测试从文件系统推导期望值，而不是硬编码数字：硬编码会让每次新增迁移
+// 都产生一次与被测行为无关的测试失败（0002 加入时即如此），
+// 久而久之会诱使人「顺手改大数字」，从而削弱这条测试的意义。
+func embeddedMigrationCount(t *testing.T) int {
+	t.Helper()
+	entries, err := fs.ReadDir(migrationFS, "migrations")
+	if err != nil {
+		t.Fatalf("读取内嵌迁移失败: %v", err)
+	}
+	n := 0
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".sql") {
+			n++
+		}
+	}
+	if n == 0 {
+		t.Fatal("未找到任何内嵌迁移文件")
+	}
+	return n
 }
 
 // TestMigrateIsIdempotent 保证重复 Open 不会重复执行迁移。
@@ -62,8 +87,8 @@ func TestMigrateIsIdempotent(t *testing.T) {
 	if err := second.DB().QueryRow(`SELECT COUNT(*) FROM schema_migration`).Scan(&n); err != nil {
 		t.Fatalf("查询 schema_migration 失败: %v", err)
 	}
-	if n != 1 {
-		t.Errorf("二次 Open 后已应用迁移数 = %d, 期望仍为 1", n)
+	if want := embeddedMigrationCount(t); n != want {
+		t.Errorf("二次 Open 后已应用迁移数 = %d, 期望仍为 %d（迁移被重复执行了）", n, want)
 	}
 }
 

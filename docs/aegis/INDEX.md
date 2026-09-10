@@ -29,3 +29,5 @@ Entries are workspace records, not authoritative runtime decisions.
 | 2026-09-11 | plan | docs/aegis/plans/2026-09-10-p2-rule-engine.md | P2 规则引擎实施计划 |
 | 2026-09-11 | evidence | docs/aegis/work/2026-09-10-mental-math-app/evidence/p2/ACCEPTANCE.md | P2 验收证据 |
 | 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p2-acceptance.json | 2026-09-10-mental-math-app evidence p2-acceptance |
+| 2026-09-11 | plan | docs/aegis/plans/2026-09-10-p3-project-rounds.md | P3 项目与练习闭环实施计划 |
+| 2026-09-11 | evidence | docs/aegis/work/2026-09-10-mental-math-app/evidence/p3/ACCEPTANCE.md | P3 验收证据 |

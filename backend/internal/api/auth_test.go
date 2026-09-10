@@ -19,6 +19,12 @@ import (
 
 // newTestApp 构建一个使用临时数据库的完整路由。
 func newTestApp(t *testing.T, regOpen bool) *fiber.App {
+	app, _ := newTestAppWithStore(t, regOpen)
+	return app
+}
+
+// newTestAppWithStore 同上，但一并返回存储层，便于直接查库断言。
+func newTestAppWithStore(t *testing.T, regOpen bool) (*fiber.App, *store.Store) {
 	t.Helper()
 	st, err := store.Open(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
@@ -27,8 +33,18 @@ func newTestApp(t *testing.T, regOpen bool) *fiber.App {
 	t.Cleanup(func() { st.Close() })
 
 	cfg := config.Config{SessionTTL: time.Hour, RegistrationOpenDefault: regOpen}
-	svc := service.NewAuthService(st, cfg.SessionTTL, regOpen)
-	return NewRouter(Deps{Config: cfg, Store: st, Handlers: &Handlers{Auth: svc}})
+	authSvc := service.NewAuthService(st, cfg.SessionTTL, regOpen)
+	projectSvc := service.NewProjectService(st)
+	roundSvc := service.NewRoundService(st, projectSvc)
+	return NewRouter(Deps{
+		Config: cfg,
+		Store:  st,
+		Handlers: &Handlers{
+			Auth:     authSvc,
+			Projects: projectSvc,
+			Rounds:   roundSvc,
+		},
+	}), st
 }
 
 // do 发起一次请求，返回状态码与解析后的 JSON 体（体为空时返回 nil）。
