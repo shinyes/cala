@@ -51,3 +51,25 @@
 - New risk signals:
 - R7 前后端判分策略分歧已由六重措施约束; R8 keystore遗失属外部依赖
 - Advisory decision: pause-for-user
+
+## Checkpoint Update
+
+- Current todo: 制定 P0-P7 实施计划
+- Active slice: writing-plans: 输出分阶段实施计划
+- Completed todos:
+- 设计规格获用户批准(含 D15-D20 修订)
+- 仓库接入 github.com/shinyes/cala, 主分支 main, 已推送
+- 确认 D6/D7 保持最小实现
+- Evidence refs:
+- git log --oneline (4 commits, main=origin/main=283706b)
+- Blocked on: none
+- Next step: 计划落盘后从 P0 开始: 验证 V1(sqlite 静态编译)并搭仓库骨架
+
+## DriftCheckDraft
+
+- Scope status: status: 仍在 P0/P1 范围内; 计划明确拒绝迁移框架与额外抽象
+- Compatibility status: status: 承载基线§9 的第1/2条级联与DSN外键, 已设 falsifier 测试
+- Retirement status: status: 本计划无退役对象; 全部为新增, 无 fallback/兼容分支
+- New risk signals:
+- P-R1: 实现者用 db.Exec(PRAGMA) 替代 DSN pragma 会让级联静默失效, 已由 TestForeignKeysEnabledOnPooledConnections 设为 falsifier
+- Advisory decision: continue

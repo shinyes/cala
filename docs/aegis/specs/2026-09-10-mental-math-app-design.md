@@ -62,7 +62,7 @@ Docker 镜像并推送 ghcr，且 GitHub Release 附有镜像 tar.gz。
 **消解**：用户选择 D6（不持久化未完成记录）。因此：
 
 - 服务端不存在 `in_progress` 状态的 round。
-- 功能8 的级联删除范围为 `round` + `attempt` + `subscription`，不含未完成练习。
+- 功能8 的级联删除范围为 `practice_round` + `attempt` + `subscription`，不含未完成练习。
 - 「关闭 app 不保存」与「重进不可续做」是**产品特性**，不是缺陷：本 App 不提供续做。
 
 ---
@@ -301,8 +301,10 @@ project(id, owner_id, title, description, question_count,
 subscription(user_id, project_id, created_at)
         -- UNIQUE(user_id, project_id)
 
-round(id, project_id, user_id, seed, started_at, finished_at,
-      total_ms, question_count, correct_count)
+practice_round(id, project_id, user_id, seed, started_at, finished_at,
+               total_ms, question_count, correct_count)
+        -- 表名刻意不用 round: 与 SQL 内建函数 ROUND() 同名, 徒增阅读歧义
+        -- 列名与 HTTP 路径 /api/rounds/* 不受影响
 
 attempt(id, round_id, idx, q_snapshot, a_snapshot, a_envelope_json,
         user_input, client_is_correct, server_is_correct, elapsed_ms)
@@ -312,9 +314,9 @@ attempt(id, round_id, idx, q_snapshot, a_snapshot, a_envelope_json,
 ### 6.1 核心不变量
 
 1. **访问权** = `project.owner_id == me` **或** 存在 `subscription(user_id=me, project_id)`。
-2. **唯一级联规则**：`(project, user)` 关系终止 ⇒ 该用户在该项目下的 `round`/`attempt` 消亡。
-   - 作者删除项目 ⇒ 所有用户关系终止 ⇒ 删除 `round`/`attempt`/`subscription`（功能8）。
-   - 订阅者退订 ⇒ 仅自己关系终止 ⇒ 删除自己的 `round`/`attempt` 与 `subscription` 行（D4）。
+2. **唯一级联规则**：`(project, user)` 关系终止 ⇒ 该用户在该项目下的 `practice_round`/`attempt` 消亡。
+   - 作者删除项目 ⇒ 所有用户关系终止 ⇒ 删除 `practice_round`/`attempt`/`subscription`（功能8）。
+   - 订阅者退订 ⇒ 仅自己关系终止 ⇒ 删除自己的 `practice_round`/`attempt` 与 `subscription` 行（D4）。
    - 两者由同一规则覆盖，无需两套逻辑。
 3. **题面/答案以快照落库**（`q_snapshot`/`a_snapshot`），不靠种子重放。这保证：
    - 功能7「重练错题」直接读快照即可，无需重新出题；
@@ -378,7 +380,7 @@ GET    /api/projects/:id/stats?grain=day|week|month
 ### 8.1 计算方式
 
 按 D5，不做物化聚合。因为 SQLite 无内置中位数，且个人练习数据量小：
-**一次查询取回区间内全部 `round` 行，在 Go 内分桶并计算全部 8 个指标。**
+**一次查询取回区间内全部 `practice_round` 行，在 Go 内分桶并计算全部 8 个指标。**
 这比分桶 SQL + 中位数近似更简单，且不可能算错。
 
 时间粒度：

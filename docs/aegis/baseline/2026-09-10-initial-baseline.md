@@ -86,7 +86,7 @@ Cala/
 - **规范 owner 划分**：后端 `api / service / store / rules / auth` 五层；
   前端 Flutter 单工程。前后端仅通过 HTTP/JSON 通信。
 - **契约 / 事实源边界**：
-  - 做题事实源 = `round` + `attempt` 两张表；**统计是派生态，不是第二事实源**（D5）。
+  - 做题事实源 = `practice_round` + `attempt` 两张表；**统计是派生态，不是第二事实源**（D5）。
   - 题面与答案以**快照**存于 `attempt`，规则源码**不是**历史题目的重建依据。
   - 规则契约边界 = 作者只写 `function generate(cfg)` 返回 `{q, a}`（D1/D11）。
 - **依赖方向**：`api → service → store`；`service → rules`（规则引擎被业务调用，
@@ -98,8 +98,8 @@ Cala/
    实测证明：仅设其一即存在挂死/耗尽的窗口；两者缺一不可。
 2. **规则保存前必须通过校验**（规格 §5.3），因为坏规则会连坐所有订阅者。
 3. **级联删除只有一条规则**：`(project, user)` 关系终止 ⇒ 该用户在该项目下的
-   `round`/`attempt` 消亡。不得为「作者删项目」与「订阅者退订」各写一套逻辑。
-4. **统计不得物化**（D5）：必须可从 `round`/`attempt` 实时推导。
+   `practice_round`/`attempt` 消亡。不得为「作者删项目」与「订阅者退订」各写一套逻辑。
+4. **统计不得物化**（D5）：必须可从 `practice_round`/`attempt` 实时推导。
 5. **不建规则 VM 池**：实测冷启动 23.7µs/题，不足以支撑池化的复杂度。
 6. **判分路径不得出现浮点**（D15）：有理数一律交叉相乘的整数运算比较。
 7. **输入清洗表只有一个 owner（服务端）**：客户端只能应用服务端下发的清洗表，
@@ -122,7 +122,7 @@ Cala/
 | 输入清洗规则 | **服务端**（随 `/rounds/start` 下发，D15） | 字符映射表为数据；客户端只应用 |
 | 判分权威值 | `attempt.server_is_correct`（D16） | `client_is_correct` 仅作反馈与告警 |
 | 账号与口令 | `internal/auth` | 不透明 token，哈希入库 |
-| 做题事实 | `internal/store` | `round` / `attempt` 两表 |
+| 做题事实 | `internal/store` | `practice_round` / `attempt` 两表 |
 | 统计派生 | `internal/service` | 读时聚合，无独立存储 |
 | 项目归属与订阅 | `internal/store` | `project.owner_id` + `subscription` 表 |
 

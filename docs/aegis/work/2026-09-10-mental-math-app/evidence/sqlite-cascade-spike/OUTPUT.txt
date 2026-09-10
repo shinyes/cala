@@ -1,0 +1,30 @@
+﻿=== V1: modernc.org/sqlite 纯 Go + CGO_ENABLED=0 ===
+  runtime.Version=go1.25.5  GOOS=windows  GOARCH=amd64
+  cgo enabled at build time: false
+  [ok] driver open + ping
+  [PASS] PRAGMA foreign_keys = 1 (want 1)
+  [PASS] PRAGMA journal_mode  = wal (want wal)
+  [ok] schema created (user/project/subscription/round/attempt)
+
+=== 场景一：作者删除项目（功能8）===
+  删除前: round=4 attempt=7 subscription=2
+  删除后: round=1 attempt=1 subscription=0
+  [PASS] 项目10 全员记录被级联删除，项目20 数据完好
+
+=== 场景二：订阅者退订（D4，仅清本人历史）===
+  退订前: round=4 attempt=7
+  退订后: round=3 attempt=5 (bob 残留 round=0)
+  [PASS] 仅 bob 的历史被清除，作者与 carol 不受影响
+
+=== 场景三：删除用户（D7 未启用，但验证 FK 完整性）===
+  [PASS] 删除 carol 后其 round 残留=0 (want 0)
+
+=== 场景四：事务原子性（整轮落库不能半途而废）===
+  [PASS] 回滚后 round 数不变 (4)
+
+=== 场景五：并发读 + 单写（WAL 下的实际行为）===
+  [PASS] 8 个并发读事务成功 8/8
+
+=== 结论 ===
+  V1 成立: 纯 Go 驱动可用、外键级联按 §6.1(2) 语义工作、事务与并发读正常
+  注意: PRAGMA foreign_keys 必须写在 DSN 中, 否则连接池下部分连接不启用外键

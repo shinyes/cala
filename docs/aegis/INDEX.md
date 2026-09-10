@@ -21,3 +21,6 @@ Entries are workspace records, not authoritative runtime decisions.
 | 2026-09-10 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-goja-spike-output.json | 2026-09-10-mental-math-app evidence goja-spike-output |
 | 2026-09-10 | artifact | docs/aegis/work/2026-09-10-mental-math-app/gate-input-pack.json | 2026-09-10-mental-math-app gate input pack |
 | 2026-09-10 | work | docs/aegis/work/2026-09-10-mental-math-app/proof-bundle.md | 2026-09-10-mental-math-app proof bundle |
+| 2026-09-10 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-spec-approved.json | 2026-09-10-mental-math-app evidence spec-approved |
+| 2026-09-10 | plan | docs/aegis/plans/2026-09-10-p0-p1-foundation-auth.md | P0 骨架与 P1 认证实施计划 |
+| 2026-09-10 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-sqlite-cascade-spike.json | 2026-09-10-mental-math-app evidence sqlite-cascade-spike |

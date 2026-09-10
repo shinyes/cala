@@ -2,11 +2,11 @@
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
   "lastCheckpointRef": "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json",
-  "resumeInstruction": "读 specs/2026-09-10-mental-math-app-design.md 的 D15(§5.5) 与 §10.3; 确认规格已获用户批准; 未批准不得写产品代码",
+  "resumeInstruction": "读 specs/2026-09-10-mental-math-app-design.md 的 §16 阶段表与 §10.3; 从计划文档指定的首个未完成阶段继续",
   "knownPartialWork": [
-    "按用户要求以最佳方案重新设计判分一致性(D15/D16, 六重措施)",
-    "APK 纳入交付并改为正式签名(D17/D18)",
-    "自审修正: A1 编号冲突改为 V1, 新增 P3.5 阶段, 基线同步"
+    "设计规格获用户批准(含 D15-D20 修订)",
+    "仓库接入 github.com/shinyes/cala, 主分支 main, 已推送",
+    "确认 D6/D7 保持最小实现"
   ],
   "mustReadBeforeContinuing": [
     "docs/aegis/work/2026-09-10-mental-math-app/10-intent.md",
@@ -14,7 +14,7 @@
     "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json"
   ],
   "unsafeToAssume": [
-    "规格修订已获用户批准",
-    "V1/V4 已成立"
+    "V1 modernc.org/sqlite 已验证",
+    "keystore 与 4 个 GitHub Secret 已配置(P7 才需要)"
   ]
 }

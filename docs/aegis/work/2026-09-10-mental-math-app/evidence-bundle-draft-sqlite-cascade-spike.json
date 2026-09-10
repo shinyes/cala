@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "sqlite-cascade-spike",
+  "type": "log",
+  "source": "go run . (modernc.org/sqlite v1.58.0, CGO_ENABLED=0, go1.25.5)",
+  "summary": "V1 成立: 纯 Go 驱动可用, CGO_ENABLED=0 交叉编译 linux/amd64 产出 6.08MB 静态二进制; 5 场景全部 PASS(删项目级联/退订仅清本人/删用户/事务回滚/8并发读); 关键发现: PRAGMA foreign_keys 必须写在 DSN 中, 否则连接池下级联静默失效",
+  "verifier": "evidence/sqlite-cascade-spike/main.go (可复现)"
+}

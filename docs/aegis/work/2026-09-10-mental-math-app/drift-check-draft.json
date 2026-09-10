@@ -3,11 +3,11 @@
   "taskId": "2026-09-10-mental-math-app",
   "taskIntentRef": "docs/aegis/work/2026-09-10-mental-math-app/task-intent-draft.json",
   "baselineRefs": [],
-  "scopeStatus": "status: 仍在十项功能范围内; 新增 D15/D16/D17/D18 为风险面彻底化与用户新要求",
-  "compatStatus": "status: 未写码; 兼容边界新增判分无浮点与清洗表单一owner 两条(基线§5.2)",
-  "retirementStatus": "status: 明确拒绝客户端JS引擎方案(§5.5.8)与split-per-abi, 并说明理由",
+  "scopeStatus": "status: 仍在 P0/P1 范围内; 计划明确拒绝迁移框架与额外抽象",
+  "compatStatus": "status: 承载基线§9 的第1/2条级联与DSN外键, 已设 falsifier 测试",
+  "retirementStatus": "status: 本计划无退役对象; 全部为新增, 无 fallback/兼容分支",
   "newRiskSignals": [
-    "R7 前后端判分策略分歧已由六重措施约束; R8 keystore遗失属外部依赖"
+    "P-R1: 实现者用 db.Exec(PRAGMA) 替代 DSN pragma 会让级联静默失效, 已由 TestForeignKeysEnabledOnPooledConnections 设为 falsifier"
   ],
-  "decision": "pause-for-user"
+  "decision": "continue"
 }

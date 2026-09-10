@@ -1,17 +1,17 @@
 {
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
-  "currentTodo": "等待用户确认规格修订 + 提供 GitHub 仓库地址与签名密钥",
+  "currentTodo": "制定 P0-P7 实施计划",
   "completedTodos": [
-    "按用户要求以最佳方案重新设计判分一致性(D15/D16, 六重措施)",
-    "APK 纳入交付并改为正式签名(D17/D18)",
-    "自审修正: A1 编号冲突改为 V1, 新增 P3.5 阶段, 基线同步"
+    "设计规格获用户批准(含 D15-D20 修订)",
+    "仓库接入 github.com/shinyes/cala, 主分支 main, 已推送",
+    "确认 D6/D7 保持最小实现"
   ],
-  "activeSlice": "规格修订完成, 等待用户确认",
+  "activeSlice": "writing-plans: 输出分阶段实施计划",
   "evidenceRefs": [
-    "docs/aegis/specs/2026-09-10-mental-math-app-design.md"
+    "git log --oneline (4 commits, main=origin/main=283706b)"
   ],
-  "blockedOn": "GitHub 仓库地址未知(CI 与 remote 需要)",
-  "nextStep": "用户确认后进入 writing-plans, 输出 P0-P7 分阶段实施计划",
+  "blockedOn": null,
+  "nextStep": "计划落盘后从 P0 开始: 验证 V1(sqlite 静态编译)并搭仓库骨架",
   "updatedAt": "2026-09-10"
 }

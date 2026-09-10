@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "spec-approved",
+  "type": "artifact",
+  "source": "用户明确确认: 进入实施计划 + D6/D7 保持最小",
+  "summary": "设计规格获批; 用户另提供仓库地址 shinyes/cala 与 applicationId cc.lcyk.cala; 4 commits 已推送 main",
+  "verifier": "用户会话确认 + git ls-remote"
+}
