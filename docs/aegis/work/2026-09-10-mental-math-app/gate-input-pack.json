@@ -3,7 +3,7 @@
   "baselineRefs": [],
   "impactStatement": "docs/aegis/work/2026-09-10-mental-math-app/impact-statement-draft.json",
   "compatPlan": "Compatibility boundary not yet refined.",
-  "retirementPlan": "status: 无需退役；已显式声明拒绝 VM 池与物化聚合表两个诱人的新增面",
+  "retirementPlan": "status: 明确拒绝客户端JS引擎方案(§5.5.8)与split-per-abi, 并说明理由",
   "evidenceBundle": [
     "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-goja-spike-output.json"
   ]

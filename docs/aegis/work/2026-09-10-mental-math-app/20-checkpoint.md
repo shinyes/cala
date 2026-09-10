@@ -29,3 +29,25 @@
 - New risk signals:
 - R3 goja 无内存上限，以超时+递归上限代偿，列为已知残留风险
 - Advisory decision: pause-for-user
+
+## Checkpoint Update
+
+- Current todo: 等待用户确认规格修订 + 提供 GitHub 仓库地址与签名密钥
+- Active slice: 规格修订完成, 等待用户确认
+- Completed todos:
+- 按用户要求以最佳方案重新设计判分一致性(D15/D16, 六重措施)
+- APK 纳入交付并改为正式签名(D17/D18)
+- 自审修正: A1 编号冲突改为 V1, 新增 P3.5 阶段, 基线同步
+- Evidence refs:
+- docs/aegis/specs/2026-09-10-mental-math-app-design.md
+- Blocked on: GitHub 仓库地址未知(CI 与 remote 需要)
+- Next step: 用户确认后进入 writing-plans, 输出 P0-P7 分阶段实施计划
+
+## DriftCheckDraft
+
+- Scope status: status: 仍在十项功能范围内; 新增 D15/D16/D17/D18 为风险面彻底化与用户新要求
+- Compatibility status: status: 未写码; 兼容边界新增判分无浮点与清洗表单一owner 两条(基线§5.2)
+- Retirement status: status: 明确拒绝客户端JS引擎方案(§5.5.8)与split-per-abi, 并说明理由
+- New risk signals:
+- R7 前后端判分策略分歧已由六重措施约束; R8 keystore遗失属外部依赖
+- Advisory decision: pause-for-user

@@ -3,11 +3,11 @@
   "taskId": "2026-09-10-mental-math-app",
   "taskIntentRef": "docs/aegis/work/2026-09-10-mental-math-app/task-intent-draft.json",
   "baselineRefs": [],
-  "scopeStatus": "status: 停留在设计阶段，未超出十项功能范围",
-  "compatStatus": "status: 尚未写码，兼容边界无损；规格 §14 已登记 6 项风险",
-  "retirementStatus": "status: 无需退役；已显式声明拒绝 VM 池与物化聚合表两个诱人的新增面",
+  "scopeStatus": "status: 仍在十项功能范围内; 新增 D15/D16/D17/D18 为风险面彻底化与用户新要求",
+  "compatStatus": "status: 未写码; 兼容边界新增判分无浮点与清洗表单一owner 两条(基线§5.2)",
+  "retirementStatus": "status: 明确拒绝客户端JS引擎方案(§5.5.8)与split-per-abi, 并说明理由",
   "newRiskSignals": [
-    "R3 goja 无内存上限，以超时+递归上限代偿，列为已知残留风险"
+    "R7 前后端判分策略分歧已由六重措施约束; R8 keystore遗失属外部依赖"
   ],
   "decision": "pause-for-user"
 }

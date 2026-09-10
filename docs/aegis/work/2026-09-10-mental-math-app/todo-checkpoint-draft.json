@@ -1,19 +1,17 @@
 {
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
-  "currentTodo": "等待用户评审设计规格",
+  "currentTodo": "等待用户确认规格修订 + 提供 GitHub 仓库地址与签名密钥",
   "completedTodos": [
-    "探索项目上下文(空仓库)",
-    "goja 沙箱可行性实测(8 组实验)",
-    "与用户确认 D1-D14 共 14 项决策",
-    "写设计规格并自审",
-    "落初始双基线"
+    "按用户要求以最佳方案重新设计判分一致性(D15/D16, 六重措施)",
+    "APK 纳入交付并改为正式签名(D17/D18)",
+    "自审修正: A1 编号冲突改为 V1, 新增 P3.5 阶段, 基线同步"
   ],
-  "activeSlice": "设计规格的用户评审门",
+  "activeSlice": "规格修订完成, 等待用户确认",
   "evidenceRefs": [
-    "docs/aegis/work/2026-09-10-mental-math-app/evidence/goja-spike/OUTPUT.txt"
+    "docs/aegis/specs/2026-09-10-mental-math-app-design.md"
   ],
-  "blockedOn": null,
-  "nextStep": "用户批准后进入 writing-plans 制定分阶段实施计划(P0-P7)",
+  "blockedOn": "GitHub 仓库地址未知(CI 与 remote 需要)",
+  "nextStep": "用户确认后进入 writing-plans, 输出 P0-P7 分阶段实施计划",
   "updatedAt": "2026-09-10"
 }

@@ -21,7 +21,7 @@ This proof bundle is an advisory Aegis Method Pack record. It does not determine
 
 ## Drift Check
 
-- Scope status: status: 停留在设计阶段，未超出十项功能范围
-- Compatibility status: status: 尚未写码，兼容边界无损；规格 §14 已登记 6 项风险
-- Retirement status: status: 无需退役；已显式声明拒绝 VM 池与物化聚合表两个诱人的新增面
+- Scope status: status: 仍在十项功能范围内; 新增 D15/D16/D17/D18 为风险面彻底化与用户新要求
+- Compatibility status: status: 未写码; 兼容边界新增判分无浮点与清洗表单一owner 两条(基线§5.2)
+- Retirement status: status: 明确拒绝客户端JS引擎方案(§5.5.8)与split-per-abi, 并说明理由
 - Advisory decision: pause-for-user

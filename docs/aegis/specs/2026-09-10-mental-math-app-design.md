@@ -29,7 +29,7 @@ Docker 镜像并推送 ghcr，且 GitHub Release 附有镜像 tar.gz。
 |---|---|---|---|
 | D1 | 规则函数契约 | **极简 `function generate(cfg)`** 返回 `{q, a}` | 最贴合「只需编写一个函数」的原始意图 |
 | D2 | 一轮练习数据流 | **整轮预生成含答案 → 客户端本地即时判分** | 零网络往返，满足功能9「打错立即反馈」 |
-| D3 | 判分方式 | **数值归一化比较 + 项目级可选容差**；非数值题退化为字符串精确匹配 | 避免「0.5 vs 1/2」「尾随空格」误判为错题 |
+| D3 | 判分方式 | **有理数精确比较 + 项目级可选容差**；非数值题退化为规范文本精确匹配（细化见 D15 / §5.5） | 避免「0.5 vs 1/2」「尾随空格」误判为错题 |
 | D4 | 订阅关系边界 | **纯只读跟随；可随时退订，退订即清空本人历史** | 破坏性操作，UI 需二次确认并明示将删除的轮次数 |
 | D5 | 统计存储 | **单事实源 + 查询时实时聚合，不建物化聚合表** | 删项目→级联删事实记录，聚合自然消失，物理上不可能不一致 |
 | D6 | 「未完成练习」 | **不持久化未完成记录**（最小实现） | round 仅在整轮完成时写入；功能8 原文的「未完成练习」无对应实体 |
@@ -39,8 +39,16 @@ Docker 镜像并推送 ghcr，且 GitHub Release 附有镜像 tar.gz。
 | D10 | UI 组件库 | **直接使用 Cupertino 组件** | 用户明确要求 iOS 风格，此为字面实现 |
 | D11 | 契约字段名 | `{q, a}` | 省字；保存期校验错误信息会明确提示字段名 |
 | D12 | 每轮题数归属 | **由项目设置 `question_count` 决定，规则无权决定** | 与 D1 极简契约一致，避免配置分散两处 |
-| D13 | 正确性来源 | **服务端用同一套归一化规则重算 `is_correct`** | 不盲信客户端上报，零成本换取一致性 |
+| D13 | 正确性来源 | **服务端用同一套判分策略重算 `server_is_correct`**（策略一致性由 D15 保证） | 不盲信客户端上报，零成本换取一致性 |
 | D14 | 项目配置编辑 | **JSON 文本框 + 实时校验** | 实现成本低；表单式编辑器列为后续增强 |
+| D15 | 判分单一性策略 | **答案域收敛 + 纯整数比较 + 清洗表由服务端单一下发**（§5.5） | 用户要求「用最好的方案彻底解决，无需考虑工作量」；消除前后端策略分歧的根因，而非缓解 |
+| D16 | 判分分歧可观测 | `attempt` 同时记录 `client_is_correct` 与 `server_is_correct`，不一致即计数与告警 | 不假设已穷举所有边界，让系统自行举报遗漏 |
+| D17 | APK 交付 | **构建并签名 release APK，作为 release 附件**（§10.4） | 用户明确要求「需要发布 apk」 |
+| D18 | APK 签名 | **CI 使用正式 keystore 签名**，不使用 debug 签名 | debug 签名有效期短且不可用于正式分发 |
+
+> **D2/D13 的修订说明**：D2（客户端本地判分）与 D13（服务端重算）保持不变——前者保证
+> 功能9 的零延迟反馈，后者保证落库权威性。D15 解决的是**两者策略一致性**这一被忽
+> 视的风险面，而不是取消其中任何一方。
 
 ---
 
@@ -182,6 +190,97 @@ function generate(cfg) {
 - **不需要 VM 池**：冷启动建 VM 实测 23.7µs/题（一轮 50 题约 1.2ms），复用 VM 8.8µs/题。
   差异不足以支撑一个池化子系统的复杂度（Existence Check 结论：`reject`）。
 
+### 5.5 判分一致性 —— 跨前后端的单一策略（D15/D16）
+
+#### 5.5.1 问题与根因
+
+D2 要求客户端**零往返即时判分**（功能9），D13 要求服务端**重算**以保证落库权威性。
+若两侧各持一份「归一化 + 容差」策略，一旦分歧就会出现
+**「界面显示答对、落库记为错」**，并**静默污染历史统计**。
+
+**根因不是「两份代码」，而是「两份策略」**：策略中含浮点运算、Unicode 归一化、
+多形态答案，任意一处语义差异都会导致分歧。因此「共享测试向量」只能**提高发现概率**，
+不能**消除分歧可能**。本节采用结构性收敛。
+
+#### 5.5.2 措施一：答案域收敛为两种规范形
+
+保存期校验（复用 §5.3 管线）将作者返回的 `a` 分类：
+
+| 分类结果 | 信封 | 判定 |
+|---|---|---|
+| 可解析为有理数（整数 / 小数 / `p/q`） | `{kind:"rational", num:"1", den:"2"}` | 有理数比较 |
+| 非有理数但为 ASCII 规范文本 | `{kind:"text", value:"质数"}` | 文本相等 |
+| 两者皆非 | —— | **拒绝保存** |
+
+信封随 `a_snapshot` 落库，成为该次答题的判分依据（与 §6.1(3) 的快照策略一致）。
+
+#### 5.5.3 措施二：彻底消除浮点
+
+有理数比较使用交叉相乘，**全程整数运算**：
+
+```
+|n₁·d₂ − n₂·d₁| · t_d  ≤  t_n · d₁ · d₂
+   其中 a = n₁/d₁，正确答案 = n₂/d₂，容差 t = t_n/t_d
+```
+
+Go 侧用 `math/big`，Dart 侧用内建 `BigInt`。**判分路径上不存在任何浮点数值**，
+因此 `0.1+0.2 != 0.3` 一类跨语言差异在结构上不可能出现。分母为零的输入按「错误」处理
+且不得触发除零。
+
+#### 5.5.4 措施三：输入清洗是数据，不是代码
+
+键盘字母表约束为 `0-9` `.` `-` `/` 与 `⌫`（功能6）。
+
+清洗规则（全角数字、全角句点、各类 Unicode 减号、千分位逗号、首尾与内部空白）
+定义为**一张字符映射表，由服务端在 `/rounds/start` 随轮次下发**。客户端只负责
+**应用这张表**，不含任何清洗策略。
+
+- 该表因此只有**一个 owner：服务端**。
+- **不使用 NFKC 等 Unicode 归一化库**：Go 的 `x/text/unicode/norm` 与 Dart 生态中
+  的对应库语义未必逐字一致，这是最容易被忽略的漂移源，故直接排除依赖。
+
+#### 5.5.5 措施四：镜像面被语料钉死
+
+经上述收敛后，两侧各自实现的仅剩三件**纯整数/纯字符串**的事：
+
+1. 严格有理数字面量解析（文法约 20 行，完全可规格化）
+2. 交叉相乘比较
+3. 文本相等
+
+**CI 门禁**：Go 侧生成 **≥10,000 条边界向量**（畸形输入、超长输入、负数、零分母、
+容差上下边界、全角字符、空输入、仅符号），Dart 测试必须**逐例一致**，
+**任一分歧即构建失败**。语料由 Go 实现生成，故 Dart 必须向 Go 对齐。
+
+#### 5.5.6 措施五：生产期分歧告警（D16）
+
+`attempt` 同时记录 `client_is_correct` 与 `server_is_correct`。二者不一致时：
+
+- 服务端计数器递增
+- 记录结构化日志（含 `q_snapshot`、`user_input`、答案信封、两侧判定）
+- 可通过管理端点或日志观察
+
+这使**语料未覆盖的真实输入引发的分歧立刻可见**，而不是静默污染统计。
+这是本设计的关键取舍：**不假设已穷举所有边界，而让系统自行举报遗漏。**
+
+#### 5.5.7 措施六：可修复性
+
+`attempt` 保存原始 `user_input` 与答案信封。若日后发现判分缺陷，
+可对 `attempt` **全量重算**并修正 `server_is_correct` 与统计，用户无需重做练习。
+这是「漂移」的最后一道保险：即便发生也可修复，而非只能承受。
+
+#### 5.5.8 残余风险与为什么不选「共享 JS 源码」
+
+另一候选方案是**把判分逻辑写成 JS**，服务端由 goja 执行、客户端由 JS 引擎执行，
+从而共享同一份**源码**。未被采用，因为：
+
+- 它共享了源码，却**未消除引擎语义差异**（浮点格式化、正则、Unicode 行为）。
+- 客户端将引入原生 JS 引擎依赖，且 Web 与 Android 走不同引擎，反而形成两条路径。
+- 本方案共享的是**纯整数算法**，其行为可被语料**完全钉死**，保证强度更高。
+
+**诚实记录残余**：本方案在技术上仍是两份实现。其语义由「收敛的答案域 +
+无浮点的整数算法 + 单一数据 owner + CI 语料门禁 + 生产分歧告警 + 可全量重算」
+六重措施共同约束。这是在不引入客户端 JS 引擎的前提下可达的最强保证。
+
 ---
 
 ## 6. 数据模型
@@ -203,8 +302,8 @@ subscription(user_id, project_id, created_at)
 round(id, project_id, user_id, seed, started_at, finished_at,
       total_ms, question_count, correct_count)
 
-attempt(id, round_id, idx, q_snapshot, a_snapshot,
-        user_input, is_correct, elapsed_ms)
+attempt(id, round_id, idx, q_snapshot, a_snapshot, a_envelope_json,
+        user_input, client_is_correct, server_is_correct, elapsed_ms)
         -- UNIQUE(round_id, idx)
 ```
 
@@ -219,6 +318,8 @@ attempt(id, round_id, idx, q_snapshot, a_snapshot,
    - 功能7「重练错题」直接读快照即可，无需重新出题；
    - 功能5 作者事后修改规则**不会篡改历史错题**。
 4. **订阅无需传播**：订阅者读的就是 `project` 同一行，作者修改即时可见（功能5 天然满足）。
+5. **判分权威**：`server_is_correct` 是权威值；`client_is_correct` 仅用于**即时反馈**与
+   **分歧告警**（D16）。统计一律基于 `server_is_correct`。二者不一致必须留痕，不得静默覆盖。
 
 ### 6.2 引导管理员
 
@@ -249,16 +350,24 @@ DELETE /api/projects/:id/share       # 撤销分享
 POST   /api/subscriptions/import     { links: [ "...", ... ] }   # 多链接导入（功能5）
 DELETE /api/subscriptions/:projectId # 退订；清空本人历史（D4）
 
-POST   /api/rounds/start             { projectId } → { seed, questions: [{q, a}] }
+POST   /api/rounds/start             { projectId }
+       → { seed,
+           scoring: { version, cleanupTable },        # §5.5.4 清洗表由服务端下发
+           questions: [ { idx, q, a, envelope } ] }   # a=展示用原文, envelope=判分用信封
+
 POST   /api/rounds/complete          { projectId, seed, startedAt, finishedAt,
-                                       attempts: [{ q, a, input, elapsedMs }] }
+                                       attempts: [{ idx, input, clientIsCorrect, elapsedMs }] }
 
 GET    /api/projects/:id/stats?grain=day|week|month
 ```
 
-**`/rounds/complete` 的服务端行为**（D13）：以归一化规则重算 `is_correct`，忽略客户端
-上报的 `correct` 字段；`total_ms` 与 `correct_count` 由服务端从 attempts 派生，不采信
-客户端汇总值。
+**`/rounds/complete` 的服务端行为**（D13 + §5.5）：
+
+1. 逐题以**服务端判分实现**从 `a_envelope` 与 `input` **重算** `server_is_correct`；
+2. 原样保存客户端上报的 `client_is_correct`，**不覆盖、不采信**（D16）；
+3. 二者不一致时递增分歧计数器并记录结构化日志；
+4. `total_ms` 与 `correct_count` 由服务端从 attempts 派生，**不采信客户端汇总值**；
+5. 统计一律基于 `server_is_correct`（§6.1(5)）。
 
 ---
 
@@ -334,23 +443,47 @@ POST /rounds/complete → 总结页
 
 | 文件 | 触发 | 行为 |
 |---|---|---|
-| `ci.yml` | push / PR | `go test ./...`、`flutter analyze`、`flutter test` |
-| `release.yml` | tag `v*` | 构建静态 Go 二进制 → 多阶段 Docker 构建 → push ghcr（`latest`/版本号/`sha`）→ `docker save \| gzip` → 创建 GitHub Release 并上传 `.tar.gz`（APK 见 §10.2） |
+| `ci.yml` | push / PR | `go test ./...`、`flutter analyze`、`flutter test`（含 §5.5.5 判分一致性语料门禁） |
+| `release.yml` | tag `v*` | ① 构建静态 Go 二进制 → 多阶段 Docker 构建 → push ghcr（`latest`/版本号/`sha`）→ `docker save \| gzip`；② 构建并签名 release APK（§10.4）；③ 创建 GitHub Release，上传镜像 `.tar.gz` 与 APK |
 
-### 10.2 超出原文的小增补（请评审时确认）
+### 10.2 APK 交付（D17 — 用户明确要求）
 
-原文功能10 只要求构建 Docker 镜像。但由于 D9 确定前端**仅以 APK 交付**，
-若不构建 APK，则没有任何可分发的 App 产物。因此建议 `release.yml` **额外构建 APK
-并作为 release 附件**。
+原文功能10 只要求构建 Docker 镜像。由于 D9 确定前端**仅以 APK 交付**，若不构建 APK
+则没有任何可分发的 App 产物。经用户确认，`release.yml` 一并构建 APK 并作为 release 附件。
 
-**APK 签名不在范围内**：CI 产出未签名（或 debug 签名）APK 供侧载；正式签名由使用者
-本地完成。
+### 10.3 APK 构建与签名（D18）
 
-### 10.3 本地测试
+**构建**：`flutter build apk --release`，产出**通用 APK**（单一文件，含全部 ABI）。
+
+选择通用 APK 而非 `--split-per-abi` 的理由：侧载场景下「下载哪个文件」的选错风险，
+大于十几 MB 的体积收益。如需可另加 split 产物，但不是默认。
+
+可选体积优化：`--obfuscate --split-debug-info=<dir>`。
+
+**签名**：正式发布**必须使用 release keystore**，不得使用 debug 签名
+（debug 签名有效期短，且 keystore 一旦更换将导致无法覆盖安装升级）。
+
+CI 流程：从 Secret 解码 keystore → 生成 `key.properties` → `flutter build apk --release`
+→ 上传产物。keystore 与口令**绝不入库**。
+
+**需要用户提供的前置输入**（我无法代劳）：
+
+| Secret 名 | 内容 |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | keystore 文件的 base64 编码 |
+| `ANDROID_KEYSTORE_PASSWORD` | keystore 口令 |
+| `ANDROID_KEY_ALIAS` | 密钥别名 |
+| `ANDROID_KEY_PASSWORD` | 密钥口令 |
+
+另需 `applicationId`（如 `com.<owner>.cala`）与展示用应用名。若 keystore 遗失，
+**已安装用户将无法升级**（只能卸载重装），故需妥善备份。
+
+### 10.4 本地测试
 
 - 主路径（本机未安装 Docker）：`cd backend && go run ./cmd/server` + `cd app && flutter run -d chrome`。
 - 备选：`docker-compose.yml`。
 - 开发期 CORS：后端放行 `localhost` 来源的开发地址（D9 的代价）。
+- 本地 APK 验证：`cd app && flutter build apk --debug`（`flutter run -d <android设备>` 亦可）。
 
 ---
 
@@ -362,9 +495,11 @@ POST /rounds/complete → 总结页
 - 邮件找回密码
 - 管理员后台（用户管理、项目审查、系统统计）—— D7
 - 未完成练习的续做/恢复 —— D6
-- APK 正式签名
+- `--split-per-abi` 分 ABI 产物（默认发通用 APK，见 §10.3）
+- 应用内自动更新 / 强更机制
 - 规则 VM 池化 —— Existence Check 判定 `reject`
 - 物化统计聚合表 —— D5
+- 客户端 JS 引擎（判分不采用「共享 JS 源码」方案，理由见 §5.5.8）
 - VM 内存上限（goja 无内置支持，以超时 + 递归上限代偿，见 §14 R3）
 
 ---
@@ -376,6 +511,7 @@ POST /rounds/complete → 总结页
 | ADR-1 | 规则引擎契约与沙箱边界 | 契约一旦发布即难变更；影响所有已分享项目 |
 | ADR-2 | `(project, user)` 单一级联不变量 | 跨用户不可逆删除语义，是数据所有权的权威定义 |
 | ADR-3 | 统计为派生态而非物化态 | 决定事实源边界与一致性策略，影响后续所有统计功能 |
+| ADR-4 | 判分单一性策略（答案域收敛 + 纯整数比较 + 清洗表单一 owner） | 决定前后端职责边界与判分语义；一旦发布即有历史数据依赖 |
 
 > 依 Aegis 规则，**不为未执行的设想创建已接受的架构记忆**。以上在对应实现完成后回填。
 
@@ -395,6 +531,11 @@ POST /rounds/complete → 总结页
 | A8 | 统计 8 个指标（含中位数，奇偶长度）计算结果正确 | Go 测试（含边界用例） |
 | A9 | 浏览器中完整走通 注册→建项目→练习→总结→错题重练→统计→分享订阅 | 手动端到端 |
 | A10 | 打 tag 后镜像推送 ghcr 且 release 附 `.tar.gz` | CI 运行记录 |
+| A11 | 作者返回非有理数且非规范文本的 `a` 时，**拒绝保存**并给出可读错误 | Go 测试 |
+| A12 | 判分一致性语料 ≥10,000 条：Go 与 Dart 实现**逐例一致**，含畸形/超长/负数/零分母/容差边界/全角 | 双侧测试 + CI 门禁 |
+| A13 | 判分路径**不含浮点**：容差边界用例（如 `1/3` 对 `0.333`，`0.1+0.2` 类）结果精确 | Go + Dart 测试 |
+| A14 | 人为注入前后端分歧时，服务端**记录告警**且统计仍以 `server_is_correct` 为准 | Go 测试 |
+| A15 | release 产出**已签名** APK，且可覆盖安装上一版本 | CI 产物 + 手动安装验证 |
 
 ---
 
@@ -406,16 +547,21 @@ POST /rounds/complete → 总结页
 | R2 | 作者保存坏规则会连坐所有订阅者 | §5.3 保存期校验为强制项，不可跳过 |
 | R3 | goja 无内存上限，恶意规则可耗尽内存 | 以 50ms 超时 + `SetMaxCallStackSize(200)` 代偿；单进程部署下风险有限，列为已知残留风险 |
 | R4 | 退订即清空历史不可逆 | UI 二次确认并**明示将删除的轮次数** |
-| R5 | 客户端持有答案（D2 的固有代价） | 无作弊动机场景；服务端重算 `is_correct`（D13）保证落库一致性 |
+| R5 | 客户端持有答案（D2 的固有代价） | 无作弊动机场景；服务端重算 `server_is_correct`（D13）保证落库一致性 |
+| R7 | 前后端判分策略分歧 → 界面显示答对、落库记为错 | **D15 六重措施**（§5.5）：答案域收敛 + 无浮点整数比较 + 清洗表单一下发 + CI 语料门禁 + 生产分歧告警 + 可全量重算。这是被用户要求「彻底解决」的风险面 |
+| R8 | keystore 遗失导致已安装用户无法升级 | 记录于 §10.3；需用户备份。属外部依赖，非代码可解 |
 | R6 | 开发期 CORS 配置不当 | 仅放行显式配置的开发源，不使用通配符 + 凭据 |
 
 ### 待验证假设
 
+> 编号用 `V*` 前缀，与 §13 的验收标准 `A*` 区分，避免引用歧义。
+
 | # | 假设 | 验证时机 |
 |---|---|---|
-| A1 | `modernc.org/sqlite` 可用且 `CGO_ENABLED=0` 静态编译通过 | 实施第一步 |
-| A2 | 本机未安装 Docker，故镜像构建只能在 CI 验证 | 已验证（`docker` 不存在） |
-| A3 | Cupertino 组件在 Android 上的观感符合预期 | 前端首个可运行里程碑 |
+| V1 | `modernc.org/sqlite` 可用且 `CGO_ENABLED=0` 静态编译通过 | 实施第一步（P0） |
+| V2 | 本机未安装 Docker，故镜像构建只能在 CI 验证 | ✅ 已验证（`docker` 命令不存在） |
+| V3 | Cupertino 组件在 Android 上的观感符合预期 | 前端首个可运行里程碑（P4） |
+| V4 | Dart 内建 `BigInt` 与 Go `math/big` 在交叉相乘上行为逐例一致 | P3.5 语料门禁（A12） |
 
 ---
 
@@ -435,16 +581,22 @@ POST /rounds/complete → 总结页
 
 | 阶段 | 范围 | 功能映射 | 出口条件 |
 |---|---|---|---|
-| **P0 骨架与风险先行** | 仓库布局、`go.mod`、**验证 A1（`modernc.org/sqlite` 纯 Go + `CGO_ENABLED=0`）**、完整 schema 迁移（§6 全部表）、配置、健康检查、Flutter 工程初始化、多阶段 Dockerfile | — | `go build` 通过；容器可启动；A1 得结论 |
+| **P0 骨架与风险先行** | 仓库布局、`go.mod`、**验证 V1（`modernc.org/sqlite` 纯 Go + `CGO_ENABLED=0`）**、完整 schema 迁移（§6 全部表）、配置、健康检查、Flutter 工程初始化、多阶段 Dockerfile | — | `go build` 通过；容器可启动；V1 得结论 |
 | **P1 认证与引导** | `user`/`session`/`setting`、bcrypt、register/login/logout/me、首个用户即管理员、注册开关 | 1 | A1 通过 |
 | **P2 规则引擎** | `internal/rules`、契约、沙箱四配置、保存期校验、表驱动单测 | 2（后端半） | A2/A3/A4 通过 |
-| **P3 项目与练习闭环（后端）** | 项目 CRUD、`/rounds/start`、`/rounds/complete`、判分归一化、服务端重算 `is_correct` | 2、9（后端） | 报告与落库一致 |
+| **P3 项目与练习闭环（后端）** | 项目 CRUD、`/rounds/start`、`/rounds/complete`、答案信封分类、服务端重算 `server_is_correct`、分歧告警计数 | 2、9（后端） | 报告与落库一致；A11/A14 通过 |
+| **P3.5 判分单一性与语料门禁** | §5.5 全部六项措施：清洗表（服务端 owner）、Go 判分实现（无浮点）、语料生成器（≥10,000 条）、**Dart 镜像实现**、CI 一致性门禁 | 9（跨端契约） | **A12/A13 通过** |
 | **P4 前端骨架与练习运行时** | Cupertino 三 Tab（§4.3）、项目列表、练习运行时（自带键盘/暂停/即时反馈）、总结页、错题页与重练 | 3、6、7、9 | A9 前半段可走通 |
 | **P5 统计** | `/stats` 端点、日/周/月分桶、8 指标计算、统计页 UI（§8.2） | 4 | A8 通过；A9 统计段可走通 |
 | **P6 分享订阅与级联删除** | `share_token`、`/subscriptions/import`（多链接）、退订清历史、项目删除级联 | 5、8 | A5/A6/A7 通过 |
-| **P7 CI 与交付** | `ci.yml`、`release.yml`、ghcr 推送、release 附件 | 10 | A10 通过 |
+| **P7 CI 与交付** | `ci.yml`、`release.yml`、ghcr 推送、**签名 APK 构建（§10.3）**、release 附件 | 10 | A10/A15 通过 |
 
-**顺序约束**：P1 → P3 依赖 P1；P4 依赖 P1+P3；P5/P6 依赖 P3；P7 依赖可构建产物。
+**顺序约束**：P1 → P3 依赖 P1；P3.5 依赖 P3（信封已产生）；P4 依赖 P3+P3.5（前端需
+调用同一判分语义）；P5/P6 依赖 P3；P7 依赖可构建产物。
+
+**P3.5 独立成阶段的理由**：D15 是**跨端契约**，同时产出 Go 与 Dart 两份实现及生成式
+语料。若并入 P3 或 P4，会出现「后端已判分、前端判分语义尚未钉死」的窗口期，
+此时 P4 的即时反馈无法被验证。独立阶段使 A12/A13 成为进入 P4 的硬门。
 
 **P0 一次性建全 schema 的理由**：§6 的数据模型在设计阶段已完整确定，分阶段加表只会
 产生无谓的迁移噪声。一次性落全表，后续阶段只加查询与写入逻辑。

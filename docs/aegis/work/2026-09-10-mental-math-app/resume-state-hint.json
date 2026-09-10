@@ -2,13 +2,11 @@
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
   "lastCheckpointRef": "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json",
-  "resumeInstruction": "读 docs/aegis/specs/2026-09-10-mental-math-app-design.md 与 baseline/2026-09-10-initial-baseline.md；确认规格是否已获用户批准；未批准则不得写产品代码",
+  "resumeInstruction": "读 specs/2026-09-10-mental-math-app-design.md 的 D15(§5.5) 与 §10.3; 确认规格已获用户批准; 未批准不得写产品代码",
   "knownPartialWork": [
-    "探索项目上下文(空仓库)",
-    "goja 沙箱可行性实测(8 组实验)",
-    "与用户确认 D1-D14 共 14 项决策",
-    "写设计规格并自审",
-    "落初始双基线"
+    "按用户要求以最佳方案重新设计判分一致性(D15/D16, 六重措施)",
+    "APK 纳入交付并改为正式签名(D17/D18)",
+    "自审修正: A1 编号冲突改为 V1, 新增 P3.5 阶段, 基线同步"
   ],
   "mustReadBeforeContinuing": [
     "docs/aegis/work/2026-09-10-mental-math-app/10-intent.md",
@@ -16,7 +14,7 @@
     "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json"
   ],
   "unsafeToAssume": [
-    "规格已获批准",
-    "modernc.org/sqlite 可用(假设 A1 未验证)"
+    "规格修订已获用户批准",
+    "V1/V4 已成立"
   ]
 }
