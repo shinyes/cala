@@ -1,25 +1,19 @@
 {
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
-  "currentTodo": "P2 规则引擎",
+  "currentTodo": "P3 项目与练习闭环",
   "completedTodos": [
-    "P0.1 仓库骨架与 Go module",
-    "P0.2 配置加载(3 测试)",
-    "P0.3 存储层/迁移/级联不变量(7 测试, 含变异测试取证)",
-    "P0.4 Fiber 路由/统一错误契约/健康检查(端到端验证)",
-    "P0.5 Flutter 工程初始化(analyze/test/apk/web 全通过)",
-    "P0.6 多阶段 Dockerfile 与 compose(Linux 静态交叉编译验证)",
-    "P1.1/P1.2 bcrypt 口令哈希与不透明会话令牌(8 测试)",
-    "P1.3 用户/会话/设置数据访问(8 测试)",
-    "P1.4 认证服务与引导管理员规则(9 测试)",
-    "P1.5 认证 API 与鉴权中间件(11 测试)",
-    "P1.6 验收: A1 通过 + 手工端到端 + 数据库安全取证"
+    "P2.1 沙箱配置(集中一处, 含递归与超时)",
+    "P2.2 规则编译(7 类错误源码被拒, 18 项语法支持)",
+    "P2.3 保存期校验(18 类行为错误被拒, 恶意规则 30s 内全拒)",
+    "P2.4 整轮出题与可复现性(A3 通过)",
+    "P2.5 验收(A2/A3/A4 全通过, 含两项变异测试取证)"
   ],
-  "activeSlice": "P0/P1 全部完成, 准备进入 P2 规则引擎",
+  "activeSlice": "P2 完成, 准备进入 P3 项目与练习闭环",
   "evidenceRefs": [
-    "docs/aegis/work/2026-09-10-mental-math-app/evidence/p0-p1/ACCEPTANCE.md"
+    "docs/aegis/work/2026-09-10-mental-math-app/evidence/p2/ACCEPTANCE.md"
   ],
-  "blockedOn": "无(keystore 与 GitHub Secrets 属 P7 前置, 当前不阻塞)",
-  "nextStep": "P2: internal/rules 的 goja 沙箱、generate(cfg) 契约、保存期校验",
+  "blockedOn": null,
+  "nextStep": "写 P3 计划: 项目 CRUD、/rounds/start、/rounds/complete、答案信封分类、服务端重算",
   "updatedAt": "2026-09-10"
 }

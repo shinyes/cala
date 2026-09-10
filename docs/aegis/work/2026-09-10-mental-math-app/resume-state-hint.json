@@ -2,19 +2,13 @@
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
   "lastCheckpointRef": "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json",
-  "resumeInstruction": "读 plans/2026-09-10-p0-p1-foundation-auth.md 与 evidence/p0-p1/ACCEPTANCE.md; P0/P1 已完成并验证; 下一步写 P2 计划(规则引擎), 出口 A2/A3/A4",
+  "resumeInstruction": "读 plans/2026-09-10-p2-rule-engine.md 与 evidence/p2/ACCEPTANCE.md; P2 已完成; 下一步 P3, 出口 A11/A14",
   "knownPartialWork": [
-    "P0.1 仓库骨架与 Go module",
-    "P0.2 配置加载(3 测试)",
-    "P0.3 存储层/迁移/级联不变量(7 测试, 含变异测试取证)",
-    "P0.4 Fiber 路由/统一错误契约/健康检查(端到端验证)",
-    "P0.5 Flutter 工程初始化(analyze/test/apk/web 全通过)",
-    "P0.6 多阶段 Dockerfile 与 compose(Linux 静态交叉编译验证)",
-    "P1.1/P1.2 bcrypt 口令哈希与不透明会话令牌(8 测试)",
-    "P1.3 用户/会话/设置数据访问(8 测试)",
-    "P1.4 认证服务与引导管理员规则(9 测试)",
-    "P1.5 认证 API 与鉴权中间件(11 测试)",
-    "P1.6 验收: A1 通过 + 手工端到端 + 数据库安全取证"
+    "P2.1 沙箱配置(集中一处, 含递归与超时)",
+    "P2.2 规则编译(7 类错误源码被拒, 18 项语法支持)",
+    "P2.3 保存期校验(18 类行为错误被拒, 恶意规则 30s 内全拒)",
+    "P2.4 整轮出题与可复现性(A3 通过)",
+    "P2.5 验收(A2/A3/A4 全通过, 含两项变异测试取证)"
   ],
   "mustReadBeforeContinuing": [
     "docs/aegis/work/2026-09-10-mental-math-app/10-intent.md",
@@ -23,6 +17,6 @@
   ],
   "unsafeToAssume": [
     "Docker 镜像可构建(本机无 Docker)",
-    "签名 APK 可产出(缺 keystore)"
+    "签名 APK 可产出(secrets 已建但未验证)"
   ]
 }

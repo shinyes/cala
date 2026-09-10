@@ -115,3 +115,27 @@
 - New risk signals:
 - P-R8 跨盘符(已根因修复+隔离验证); P-R9 PS5.1 写非法 UTF-8(已修复+全仓校验); 新增未验证项: Docker 镜像构建与签名 APK 留待 P7
 - Advisory decision: continue
+
+## Checkpoint Update
+
+- Current todo: P3 项目与练习闭环
+- Active slice: P2 完成, 准备进入 P3 项目与练习闭环
+- Completed todos:
+- P2.1 沙箱配置(集中一处, 含递归与超时)
+- P2.2 规则编译(7 类错误源码被拒, 18 项语法支持)
+- P2.3 保存期校验(18 类行为错误被拒, 恶意规则 30s 内全拒)
+- P2.4 整轮出题与可复现性(A3 通过)
+- P2.5 验收(A2/A3/A4 全通过, 含两项变异测试取证)
+- Evidence refs:
+- docs/aegis/work/2026-09-10-mental-math-app/evidence/p2/ACCEPTANCE.md
+- Blocked on: none
+- Next step: 写 P3 计划: 项目 CRUD、/rounds/start、/rounds/complete、答案信封分类、服务端重算
+
+## DriftCheckDraft
+
+- Scope status: status: 完成规格§16 的 P2, 未越界到 P3
+- Compatibility status: status: 作者契约未扩张(D1/D11); 沙箱四配置集中一处无第二份拷贝; 无 fallback/兼容分支
+- Retirement status: status: 无退役对象; 明确拒绝 VM 池与多函数契约; 变异测试用的临时代码已全部还原(grep MUTATION 无残留)
+- New risk signals:
+- P2 新增局限: goja 无内存上限仍未解决(仅以超时+递归+输出长度上限收窄); 模块级初始化按题重复执行; 校验只跑 20 次属概率性防护
+- Advisory decision: continue

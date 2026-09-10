@@ -33,3 +33,11 @@ No evidence has been recorded yet.
 - Source: go build/vet/test + flutter analyze/test/build + 手工端到端 HTTP + DB 字节取证
 - Summary: P0/P1 出口条件满足: 5 个 Go 包测试全绿; A1 通过(首个用户 becameAdmin=true, 关注册后 403); 级联不变量经变异测试取证确有捕获能力; DB 中无明文令牌与明文口令; Flutter analyze 无 issue 且 apk/web 均构建成功
 - Verifier: evidence/p0-p1/ACCEPTANCE.md
+
+## EvidenceBundleDraft
+
+- Artifact key: p2-acceptance
+- Type: test-report
+- Source: go test ./internal/rules/ -count=1 -v  + 两项变异测试
+- Summary: A2/A3/A4 全通过: 69 项测试 PASS/0 FAIL; 编译期拒绝 7 类错误源码, 运行期拒绝 18 类; 同种子 50 题逐字段相同; 6 条恶意规则 30s 内全被拒; 变异测试证明可复现性与超时中断均为承重(移除后分别失败与挂起)
+- Verifier: evidence/p2/ACCEPTANCE.md
