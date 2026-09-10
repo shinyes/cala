@@ -18,10 +18,13 @@ This proof bundle is an advisory Aegis Method Pack record. It does not determine
 ## Evidence Bundle Refs
 
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-goja-spike-output.json
+- docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p0-p1-acceptance.json
+- docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-spec-approved.json
+- docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-sqlite-cascade-spike.json
 
 ## Drift Check
 
-- Scope status: status: 仍在十项功能范围内; 新增 D15/D16/D17/D18 为风险面彻底化与用户新要求
-- Compatibility status: status: 未写码; 兼容边界新增判分无浮点与清洗表单一owner 两条(基线§5.2)
-- Retirement status: status: 明确拒绝客户端JS引擎方案(§5.5.8)与split-per-abi, 并说明理由
-- Advisory decision: pause-for-user
+- Scope status: status: 完成规格§16 的 P0/P1, 未越界到 P2 及以后
+- Compatibility status: status: 兼容边界 1/2 已由测试守护(含变异取证); 统一错误契约已确立并复用
+- Retirement status: status: 无退役对象; 明确拒绝迁移框架与冗余抽象; 被证伪的 -Dfile.encoding 已移除而非保留
+- Advisory decision: continue

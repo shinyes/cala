@@ -25,3 +25,11 @@ No evidence has been recorded yet.
 - Source: go run . (modernc.org/sqlite v1.58.0, CGO_ENABLED=0, go1.25.5)
 - Summary: V1 成立: 纯 Go 驱动可用, CGO_ENABLED=0 交叉编译 linux/amd64 产出 6.08MB 静态二进制; 5 场景全部 PASS(删项目级联/退订仅清本人/删用户/事务回滚/8并发读); 关键发现: PRAGMA foreign_keys 必须写在 DSN 中, 否则连接池下级联静默失效
 - Verifier: evidence/sqlite-cascade-spike/main.go (可复现)
+
+## EvidenceBundleDraft
+
+- Artifact key: p0-p1-acceptance
+- Type: test-report
+- Source: go build/vet/test + flutter analyze/test/build + 手工端到端 HTTP + DB 字节取证
+- Summary: P0/P1 出口条件满足: 5 个 Go 包测试全绿; A1 通过(首个用户 becameAdmin=true, 关注册后 403); 级联不变量经变异测试取证确有捕获能力; DB 中无明文令牌与明文口令; Flutter analyze 无 issue 且 apk/web 均构建成功
+- Verifier: evidence/p0-p1/ACCEPTANCE.md

@@ -36,11 +36,14 @@ app/                            Flutter 工程（P0.5 初始化）
 
 | 项 | 版本/选择 | 依据 |
 |---|---|---|
-| Go | 1.25.5（本机） | 已确认 |
-| Fiber | `github.com/gofiber/fiber/v2` | 需求指定 |
+| Go | **1.26.0**（go.mod 声明） | ⚠️ 执行期修正：本机安装的是 1.25.5，但 `golang.org/x/crypto v0.57.0` 要求 `go >= 1.26.0`，`GOTOOLCHAIN=local` 直接报错。`GOTOOLCHAIN=auto`（默认）会下载并缓存 1.26.0，实测可构建。故 go.mod 声明 `go 1.26.0`，构建镜像须用 `golang:1.26-alpine` |
+| Fiber | `github.com/gofiber/fiber/v2 v2.52.15` | 需求指定；实测拉取成功 |
 | SQLite 驱动 | `modernc.org/sqlite v1.58.0` | **V1 已实测通过**（纯 Go，`CGO_ENABLED=0` 静态构建产出 6.08 MB 二进制） |
-| 口令哈希 | `golang.org/x/crypto/bcrypt` | 成熟 |
+| 口令哈希 | `golang.org/x/crypto v0.57.0`（`bcrypt`） | 该版本即上表 Go 1.26 要求的来源 |
 | Flutter | 3.44.9 / Dart 3.12.2（本机） | 已确认 |
+
+> **CGO**：本机无 C 编译器，`CGO_ENABLED` 默认即为 `0`。这与目标部署形态一致，
+> 故本地测试与生产同构，无需额外切换。
 
 ## Baseline / Authority Refs
 
@@ -1180,7 +1183,8 @@ flutter run -d chrome
 
 ```dockerfile
 # ---- 构建阶段 ----
-FROM golang:1.25-alpine AS build
+# 必须 >= 1.26: golang.org/x/crypto v0.57.0 要求 go 1.26.0（见 Tech Stack）
+FROM golang:1.26-alpine AS build
 WORKDIR /src
 
 # 先只拷贝依赖描述，利用层缓存
@@ -2728,6 +2732,53 @@ flutter analyze ; flutter test
 | P-R2 | `go mod` 拉取依赖受网络影响（本机走 `goproxy.cn`） | 已确认可用；若失败改用 `GOPROXY=https://proxy.golang.org,direct` |
 | P-R3 | `LastInsertId()` 的 `int64` 与 `?` 占位符绑定 | 计划已直接以 `int64` 传参；不使用 `::` 强转 |
 | P-R4 | 本机无 Docker，Dockerfile 只能静态检查 | 已知并接受；P7 在 CI 首次真实验证 |
+| P-R6 | `golang:1.26-alpine` 镜像 tag 无法本地验证（本机无 Docker，Docker Hub 在本环境不可达） | 若 tag 不存在，P7 的 CI 会立即且显眼地失败，修复代价仅为改一个字符串。**不为此引入额外验证机制** |
+| P-R7 | `GOTOOLCHAIN=auto` 依赖工具链下载；离线或受限网络下可能失败 | 1.26.0 已缓存于本机；CI 用 `go-version-file` 显式安装；Docker 构建镜像自带 1.26，不经由下载 |
+| **P-R8** | **Windows 跨盘符导致 Android 构建失败**（见下方「执行期发现 P-R8」） | **根因修复**：令 pub cache 与项目同盘。已设用户级 `PUB_CACHE=D:\Programs\Pub\Cache`。备选缓解：`kotlin.incremental=false` |
+| **P-R9** | **Windows PowerShell 5.1 的 `Add-Content`/`Set-Content` 默认用 ANSI(GBK)，会写出非法 UTF-8** | 本项目所有文件一律用编辑工具写 UTF-8；脚本写文件必须显式 `-Encoding utf8`。已全仓校验：无 BOM、无非法 UTF-8 |
+
+### 执行期发现 P-R8：Windows 跨盘符导致 `compileDebugKotlin` 失败
+
+**症状**：`flutter build apk` 失败于
+`Execution failed for task ':shared_preferences_android:compileDebugKotlin'`，
+消息为 `Could not close incremental caches in ...: class-fq-name-to-source.tab, source-to-classes.tab, internal-name-to-source.tab`。
+
+**误导性**：外层消息把原因指向「增量缓存」，容易误判为缓存损坏或杀软锁文件。
+
+**真正的根因**（藏在 `--stacktrace` 的 `Suppressed` 里）：
+
+```
+IllegalArgumentException: this and base files have different roots:
+C:\Users\<user>\AppData\Local\Pub\Cache\hosted\...\LegacySharedPreferencesPlugin.kt
+and
+D:\Desktop\Cala\app\android
+```
+
+pub cache 在 **C:**、项目在 **D:**。Kotlin 增量编译器在 flush 缓存时要对源文件做
+`Path.relativize()`，而 Windows 下**跨盘符无法相对化**，于是抛
+`IllegalArgumentException`，最终被包装成「无法关闭增量缓存」。
+
+**根因修复**：让两者同盘。本机已设置用户级环境变量
+`PUB_CACHE=D:\Programs\Pub\Cache`（Flutter SDK、Android SDK 均已在 D:）。
+
+**已排除的假设**（各做过一次单变量实验）：
+1. Gradle/Kotlin 守护进程持有文件句柄 —— 杀掉全部守护进程并 `flutter clean` 后仍复现。
+2. 编码（`-Dfile.encoding=UTF-8`）—— 加上后仍复现。
+3. BOM 或非法 UTF-8 源文件 —— 全仓扫描确认 app/ 与 android/ 下无 BOM。
+
+**隔离验证**（确认哪个改动是承重的）：仅设 `PUB_CACHE` 到 D:、**去掉** `-Dfile.encoding=UTF-8`
+后重新构建，仍 `✓ Built app-debug.apk`，exit=0。故：
+- 承重改动只有「同盘」这一项；
+- `-Dfile.encoding=UTF-8` 经证不必要，已从 `gradle.properties` 移除（不保留被证伪的配置）。
+
+**备选缓解**（仅当无法同盘时使用）：`kotlin.incremental=false`。代价是构建变慢，
+且掩盖症状而非消除成因，故不作为默认。
+
+**对 CI 的影响**：无。Linux 单文件系统，不存在跨盘符问题。
+
+**需要的贡献者约定**：在 Windows 上开发时，`PUB_CACHE` 必须与项目同盘，
+否则 `compileDebugKotlin` 必然失败。已写入 README 的本地开发章节。
+
 | P-R5 | `flutter create` 生成的 applicationId 与 D20 不符 | Task P0.5 步骤 2 明确要求核对并改正 |
 
 ## Retirement

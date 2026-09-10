@@ -1,4 +1,4 @@
-﻿=== V1: modernc.org/sqlite 纯 Go + CGO_ENABLED=0 ===
+=== V1: modernc.org/sqlite 纯 Go + CGO_ENABLED=0 ===
   runtime.Version=go1.25.5  GOOS=windows  GOARCH=amd64
   cgo enabled at build time: false
   [ok] driver open + ping

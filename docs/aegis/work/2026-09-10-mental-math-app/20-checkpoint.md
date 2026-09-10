@@ -73,3 +73,45 @@
 - New risk signals:
 - P-R1: 实现者用 db.Exec(PRAGMA) 替代 DSN pragma 会让级联静默失效, 已由 TestForeignKeysEnabledOnPooledConnections 设为 falsifier
 - Advisory decision: continue
+
+## Checkpoint Update
+
+- Current todo: P0.1 仓库骨架与 Go module
+- Active slice: 执行 P0.1: 创建 backend/go.mod 与 .dockerignore, 拉取依赖
+- Completed todos:
+- 设计规格与 P0/P1 实施计划获批
+- V1 与级联不变量实测通过
+- Evidence refs:
+- docs/aegis/plans/2026-09-10-p0-p1-foundation-auth.md
+- Blocked on: none
+- Next step: P0.2 配置加载
+
+## Checkpoint Update
+
+- Current todo: P2 规则引擎
+- Active slice: P0/P1 全部完成, 准备进入 P2 规则引擎
+- Completed todos:
+- P0.1 仓库骨架与 Go module
+- P0.2 配置加载(3 测试)
+- P0.3 存储层/迁移/级联不变量(7 测试, 含变异测试取证)
+- P0.4 Fiber 路由/统一错误契约/健康检查(端到端验证)
+- P0.5 Flutter 工程初始化(analyze/test/apk/web 全通过)
+- P0.6 多阶段 Dockerfile 与 compose(Linux 静态交叉编译验证)
+- P1.1/P1.2 bcrypt 口令哈希与不透明会话令牌(8 测试)
+- P1.3 用户/会话/设置数据访问(8 测试)
+- P1.4 认证服务与引导管理员规则(9 测试)
+- P1.5 认证 API 与鉴权中间件(11 测试)
+- P1.6 验收: A1 通过 + 手工端到端 + 数据库安全取证
+- Evidence refs:
+- docs/aegis/work/2026-09-10-mental-math-app/evidence/p0-p1/ACCEPTANCE.md
+- Blocked on: 无(keystore 与 GitHub Secrets 属 P7 前置, 当前不阻塞)
+- Next step: P2: internal/rules 的 goja 沙箱、generate(cfg) 契约、保存期校验
+
+## DriftCheckDraft
+
+- Scope status: status: 完成规格§16 的 P0/P1, 未越界到 P2 及以后
+- Compatibility status: status: 兼容边界 1/2 已由测试守护(含变异取证); 统一错误契约已确立并复用
+- Retirement status: status: 无退役对象; 明确拒绝迁移框架与冗余抽象; 被证伪的 -Dfile.encoding 已移除而非保留
+- New risk signals:
+- P-R8 跨盘符(已根因修复+隔离验证); P-R9 PS5.1 写非法 UTF-8(已修复+全仓校验); 新增未验证项: Docker 镜像构建与签名 APK 留待 P7
+- Advisory decision: continue

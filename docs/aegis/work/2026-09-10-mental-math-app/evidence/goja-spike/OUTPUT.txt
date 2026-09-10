@@ -1,4 +1,4 @@
-﻿=== 1. ES feature matrix (what rule authors can write) ===
+=== 1. ES feature matrix (what rule authors can write) ===
   [ok  ] let/const/template-literal      
   [ok  ] arrow+default params            
   [ok  ] destructuring+defaults          

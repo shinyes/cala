@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "p0-p1-acceptance",
+  "type": "test-report",
+  "source": "go build/vet/test + flutter analyze/test/build + 手工端到端 HTTP + DB 字节取证",
+  "summary": "P0/P1 出口条件满足: 5 个 Go 包测试全绿; A1 通过(首个用户 becameAdmin=true, 关注册后 403); 级联不变量经变异测试取证确有捕获能力; DB 中无明文令牌与明文口令; Flutter analyze 无 issue 且 apk/web 均构建成功",
+  "verifier": "evidence/p0-p1/ACCEPTANCE.md"
+}

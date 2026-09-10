@@ -24,7 +24,7 @@ docs/aegis/ 设计规格、基线与工作记录（权威文档）
 
 ## 本地开发
 
-前置：Go 1.25+、Flutter 3.44+。
+前置：Go 1.26+、Flutter 3.44+。
 
 ```bash
 # 后端
@@ -33,6 +33,27 @@ cd backend && go run ./cmd/server
 # 前端（开发期用浏览器调试）
 cd app && flutter run -d chrome
 ```
+
+### Windows 开发者必读：pub cache 必须与项目同盘
+
+若 pub cache 与项目位于**不同盘符**（例如项目在 `D:` 而 pub cache 在 `C:\Users\...\AppData\Local\Pub\Cache`），
+Android 构建会失败于 `:shared_preferences_android:compileDebugKotlin`，报
+`Could not close incremental caches`。
+
+原因：Kotlin 增量编译器在 flush 缓存时对源文件做 `Path.relativize()`，
+而 Windows 下**跨盘符无法相对化**，抛 `IllegalArgumentException`。
+外层「增量缓存」错误信息具有误导性，真正的原因只出现在 `--stacktrace` 的 `Suppressed` 链里。
+
+修复（令两者同盘），例如把 pub cache 放到与项目相同的盘：
+
+```powershell
+[Environment]::SetEnvironmentVariable("PUB_CACHE", "D:\Programs\Pub\Cache", "User")
+```
+
+然后重开终端并 `flutter pub get`。
+
+CI 不受影响（Linux 单文件系统）。仅在无法同盘时，才退而设置
+`kotlin.incremental=false`——它会掩盖成因并使构建变慢。
 
 测试：
 

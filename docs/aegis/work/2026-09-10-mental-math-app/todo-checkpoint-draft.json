@@ -1,17 +1,25 @@
 {
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
-  "currentTodo": "制定 P0-P7 实施计划",
+  "currentTodo": "P2 规则引擎",
   "completedTodos": [
-    "设计规格获用户批准(含 D15-D20 修订)",
-    "仓库接入 github.com/shinyes/cala, 主分支 main, 已推送",
-    "确认 D6/D7 保持最小实现"
+    "P0.1 仓库骨架与 Go module",
+    "P0.2 配置加载(3 测试)",
+    "P0.3 存储层/迁移/级联不变量(7 测试, 含变异测试取证)",
+    "P0.4 Fiber 路由/统一错误契约/健康检查(端到端验证)",
+    "P0.5 Flutter 工程初始化(analyze/test/apk/web 全通过)",
+    "P0.6 多阶段 Dockerfile 与 compose(Linux 静态交叉编译验证)",
+    "P1.1/P1.2 bcrypt 口令哈希与不透明会话令牌(8 测试)",
+    "P1.3 用户/会话/设置数据访问(8 测试)",
+    "P1.4 认证服务与引导管理员规则(9 测试)",
+    "P1.5 认证 API 与鉴权中间件(11 测试)",
+    "P1.6 验收: A1 通过 + 手工端到端 + 数据库安全取证"
   ],
-  "activeSlice": "writing-plans: 输出分阶段实施计划",
+  "activeSlice": "P0/P1 全部完成, 准备进入 P2 规则引擎",
   "evidenceRefs": [
-    "git log --oneline (4 commits, main=origin/main=283706b)"
+    "docs/aegis/work/2026-09-10-mental-math-app/evidence/p0-p1/ACCEPTANCE.md"
   ],
-  "blockedOn": null,
-  "nextStep": "计划落盘后从 P0 开始: 验证 V1(sqlite 静态编译)并搭仓库骨架",
+  "blockedOn": "无(keystore 与 GitHub Secrets 属 P7 前置, 当前不阻塞)",
+  "nextStep": "P2: internal/rules 的 goja 沙箱、generate(cfg) 契约、保存期校验",
   "updatedAt": "2026-09-10"
 }
