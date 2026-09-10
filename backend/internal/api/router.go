@@ -14,8 +14,9 @@ import (
 
 // Deps 是路由所需的依赖集合。
 type Deps struct {
-	Config config.Config
-	Store  *store.Store
+	Config   config.Config
+	Store    *store.Store
+	Handlers *Handlers
 }
 
 // NewRouter 装配 Fiber 应用。
@@ -47,6 +48,9 @@ func NewRouter(d Deps) *fiber.App {
 
 	api := app.Group("/api")
 	registerHealth(api)
+	if d.Handlers != nil {
+		d.Handlers.registerAuth(api)
+	}
 
 	return app
 }
