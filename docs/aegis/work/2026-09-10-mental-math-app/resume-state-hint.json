@@ -2,13 +2,13 @@
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
   "lastCheckpointRef": "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json",
-  "resumeInstruction": "读 plans/2026-09-10-p3-project-rounds.md 与 evidence/p3/ACCEPTANCE.md; P3 已完成; 下一步 P3.5, 出口 A12/A13",
+  "resumeInstruction": "读 evidence/p3.5/ACCEPTANCE.md 与 specs 的 4.3(三Tab信息架构)/9(练习运行时); P3.5 已完成; 下一步写 P4 计划",
   "knownPartialWork": [
-    "P3.1 判分核心 internal/scoring(114 测试, 含浮点变异取证)",
-    "P3.2 容差迁移 0002 与项目数据访问",
-    "P3.3 项目 CRUD 与规则校验(含 fail() 吞错误缺陷修复)",
-    "P3.4 轮次出题与交卷(服务端重算+分歧告警)",
-    "P3.5 验收(A11/A14 通过, 336 测试全绿, 手工端到端+查库取证)"
+    "P3.5 语料生成器(13872 条, 由 Go 侧计算)",
+    "P3.5 Dart 镜像实现(零依赖, BigInt, 清洗表不由客户端定义)",
+    "P3.5 生成端护栏(新鲜度/纯ASCII/规模下限)",
+    "P3.5 CI 工作流 ci.yml(门禁执行点)",
+    "P3.5 验收(A12/A13 通过, 三项变异测试取证)"
   ],
   "mustReadBeforeContinuing": [
     "docs/aegis/work/2026-09-10-mental-math-app/10-intent.md",
@@ -16,7 +16,7 @@
     "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json"
   ],
   "unsafeToAssume": [
-    "容器可构建(本机无 Docker)",
-    "签名 APK 可产出(secrets 未验证)"
+    "CI 已通过(无法验证)",
+    "subosito/flutter-action@v2 与 flutter 3.44.9 组合可用"
   ]
 }

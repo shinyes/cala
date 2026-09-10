@@ -49,3 +49,11 @@ No evidence has been recorded yet.
 - Source: go test ./... -count=1 (336 项) + 手工端到端 + 查库 + 浮点变异测试
 - Summary: A11/A14 通过。336 测试 0 失败。查库确认 client_is_correct 6 行全 true(原样保存未覆盖)而 server_is_correct 仅 3 行 true(权威重算)，分歧计数 3。变异测试证明无浮点判分被真实守护。修复 3 处设计缺陷(ASCII 文本矛盾/容差无字段)与 3 处实现或测试缺陷(fail 吞错误/硬编码迁移数/逗号分组预期)
 - Verifier: evidence/p3/ACCEPTANCE.md
+
+## EvidenceBundleDraft
+
+- Artifact key: p3.5-acceptance
+- Type: test-report
+- Source: flutter test (13872 条语料比对) + go test ./cmd/scorpus/ + 三项变异测试
+- Summary: A12/A13 通过。13872 条语料逐例一致(分类628+比较13244)。变异测试证明门禁有捕获能力: Dart 改 double 仅 4/13244 命中(恰为植入陷阱, 说明用例针对性才是强度来源); 静默降级 278/628 命中; 改 Go 清洗表不重新生成则新鲜度护栏失败。已记录过程偏差: P3.5 未单独写计划文档
+- Verifier: evidence/p3.5/ACCEPTANCE.md

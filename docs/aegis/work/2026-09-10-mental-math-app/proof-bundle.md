@@ -20,13 +20,14 @@ This proof bundle is an advisory Aegis Method Pack record. It does not determine
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-goja-spike-output.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p0-p1-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p2-acceptance.json
+- docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p3-5-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p3-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-spec-approved.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-sqlite-cascade-spike.json
 
 ## Drift Check
 
-- Scope status: status: 完成规格§16 的 P3, 未越界到 P4/P5/P6
-- Compatibility status: status: 判分权威与分歧留痕已由解码取证; 清洗表单一下发(32 项+版本号); 快照不可变已验证; 作者契约未扩张
-- Retirement status: status: 无退役对象; 变异测试代码已还原; 明确拒绝 ORM/有理数库/metrics 库; 刻意不提供可单独调用的退订原语
+- Scope status: status: 完成规格§16 的 P3.5; 过程偏差(缺计划文档)已如实记录于 evidence §6
+- Compatibility status: status: 清洗表单一下发(客户端只应用数据, 已由空表测试证明未内置映射); 判分无浮点由双侧守护; 单向对齐(Go 生成->Dart 对齐)
+- Retirement status: status: 无退役对象; 三项变异测试代码已全部还原(grep MUTATION 无残留); 明确拒绝客户端 JS 引擎与人工同步两方案并记录理由
 - Advisory decision: continue

@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "p3.5-acceptance",
+  "type": "test-report",
+  "source": "flutter test (13872 条语料比对) + go test ./cmd/scorpus/ + 三项变异测试",
+  "summary": "A12/A13 通过。13872 条语料逐例一致(分类628+比较13244)。变异测试证明门禁有捕获能力: Dart 改 double 仅 4/13244 命中(恰为植入陷阱, 说明用例针对性才是强度来源); 静默降级 278/628 命中; 改 Go 清洗表不重新生成则新鲜度护栏失败。已记录过程偏差: P3.5 未单独写计划文档",
+  "verifier": "evidence/p3.5/ACCEPTANCE.md"
+}

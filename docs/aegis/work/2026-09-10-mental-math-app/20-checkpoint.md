@@ -163,3 +163,27 @@
 - New risk signals:
 - P3 遗留: A14 的统计部分待 P5; 前端判分一致性待 P3.5; 订阅导入退订待 P6
 - Advisory decision: continue
+
+## Checkpoint Update
+
+- Current todo: P4 前端骨架与练习运行时
+- Active slice: P3.5 完成并推送, 准备进入 P4 前端
+- Completed todos:
+- P3.5 语料生成器(13872 条, 由 Go 侧计算)
+- P3.5 Dart 镜像实现(零依赖, BigInt, 清洗表不由客户端定义)
+- P3.5 生成端护栏(新鲜度/纯ASCII/规模下限)
+- P3.5 CI 工作流 ci.yml(门禁执行点)
+- P3.5 验收(A12/A13 通过, 三项变异测试取证)
+- Evidence refs:
+- docs/aegis/work/2026-09-10-mental-math-app/evidence/p3.5/ACCEPTANCE.md
+- Blocked on: CI 无法本地验证(本环境不可达 github.com API 与页面); Actions 运行状态需用户在 GitHub 上确认
+- Next step: P4: Cupertino 三 Tab、项目列表、练习运行时(自带键盘/暂停/即时反馈)、总结页与错题重练
+
+## DriftCheckDraft
+
+- Scope status: status: 完成规格§16 的 P3.5; 过程偏差(缺计划文档)已如实记录于 evidence §6
+- Compatibility status: status: 清洗表单一下发(客户端只应用数据, 已由空表测试证明未内置映射); 判分无浮点由双侧守护; 单向对齐(Go 生成->Dart 对齐)
+- Retirement status: status: 无退役对象; 三项变异测试代码已全部还原(grep MUTATION 无残留); 明确拒绝客户端 JS 引擎与人工同步两方案并记录理由
+- New risk signals:
+- CI 无法本地验证(本环境不可达 github.com); goja 无内存上限仍未解决; subosito/flutter-action 固定版本组合待 CI 首跑确认
+- Advisory decision: continue

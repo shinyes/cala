@@ -1,19 +1,19 @@
 {
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
-  "currentTodo": "P3.5 判分单一性与语料门禁",
+  "currentTodo": "P4 前端骨架与练习运行时",
   "completedTodos": [
-    "P3.1 判分核心 internal/scoring(114 测试, 含浮点变异取证)",
-    "P3.2 容差迁移 0002 与项目数据访问",
-    "P3.3 项目 CRUD 与规则校验(含 fail() 吞错误缺陷修复)",
-    "P3.4 轮次出题与交卷(服务端重算+分歧告警)",
-    "P3.5 验收(A11/A14 通过, 336 测试全绿, 手工端到端+查库取证)"
+    "P3.5 语料生成器(13872 条, 由 Go 侧计算)",
+    "P3.5 Dart 镜像实现(零依赖, BigInt, 清洗表不由客户端定义)",
+    "P3.5 生成端护栏(新鲜度/纯ASCII/规模下限)",
+    "P3.5 CI 工作流 ci.yml(门禁执行点)",
+    "P3.5 验收(A12/A13 通过, 三项变异测试取证)"
   ],
-  "activeSlice": "P3 完成, 准备进入 P3.5 跨端判分一致性",
+  "activeSlice": "P3.5 完成并推送, 准备进入 P4 前端",
   "evidenceRefs": [
-    "docs/aegis/work/2026-09-10-mental-math-app/evidence/p3/ACCEPTANCE.md"
+    "docs/aegis/work/2026-09-10-mental-math-app/evidence/p3.5/ACCEPTANCE.md"
   ],
-  "blockedOn": "无",
-  "nextStep": "P3.5: 由 scoring 生成 >=10000 条语料 + Dart 镜像实现 + CI 一致性门禁",
+  "blockedOn": "CI 无法本地验证(本环境不可达 github.com API 与页面); Actions 运行状态需用户在 GitHub 上确认",
+  "nextStep": "P4: Cupertino 三 Tab、项目列表、练习运行时(自带键盘/暂停/即时反馈)、总结页与错题重练",
   "updatedAt": "2026-09-10"
 }
