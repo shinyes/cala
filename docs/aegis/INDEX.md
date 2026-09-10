@@ -17,3 +17,7 @@ Entries are workspace records, not authoritative runtime decisions.
 | 2026-09-10 | artifact | docs/aegis/work/2026-09-10-mental-math-app/drift-check-draft.json | 速算练习 App（Go+Fiber+SQLite 后端 / Flutter 安卓前端） drift check draft |
 | 2026-09-10 | spec | docs/aegis/specs/2026-09-10-mental-math-app-design.md | 速算练习 App 设计规格 |
 | 2026-09-10 | baseline | docs/aegis/baseline/2026-09-10-initial-baseline.md | 初始双基线快照 |
+| 2026-09-10 | artifact | docs/aegis/work/2026-09-10-mental-math-app/resume-state-hint.json | 2026-09-10-mental-math-app resume state hint |
+| 2026-09-10 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-goja-spike-output.json | 2026-09-10-mental-math-app evidence goja-spike-output |
+| 2026-09-10 | artifact | docs/aegis/work/2026-09-10-mental-math-app/gate-input-pack.json | 2026-09-10-mental-math-app gate input pack |
+| 2026-09-10 | work | docs/aegis/work/2026-09-10-mental-math-app/proof-bundle.md | 2026-09-10-mental-math-app proof bundle |

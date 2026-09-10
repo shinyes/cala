@@ -1,0 +1,34 @@
+# Normalize line endings on commit so the repo stays consistent
+# across Windows dev and Linux CI.
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary assets must never be normalized
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.jar binary
+*.keystore binary
+*.jks binary
+*.apk binary
+*.aab binary
+*.so binary
+*.dll binary
+*.exe binary
+*.db binary
+*.sqlite binary
+*.tar.gz binary
+
+# Go module files are generated and diff-noise sensitive
+go.sum -diff

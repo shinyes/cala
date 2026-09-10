@@ -1,11 +1,19 @@
 {
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
-  "currentTodo": "写并提交设计规格",
-  "completedTodos": [],
-  "activeSlice": "设计规格落盘与用户评审",
-  "evidenceRefs": [],
+  "currentTodo": "等待用户评审设计规格",
+  "completedTodos": [
+    "探索项目上下文(空仓库)",
+    "goja 沙箱可行性实测(8 组实验)",
+    "与用户确认 D1-D14 共 14 项决策",
+    "写设计规格并自审",
+    "落初始双基线"
+  ],
+  "activeSlice": "设计规格的用户评审门",
+  "evidenceRefs": [
+    "docs/aegis/work/2026-09-10-mental-math-app/evidence/goja-spike/OUTPUT.txt"
+  ],
   "blockedOn": null,
-  "nextStep": "评审通过后进入 writing-plans 制定实施计划",
+  "nextStep": "用户批准后进入 writing-plans 制定分阶段实施计划(P0-P7)",
   "updatedAt": "2026-09-10"
 }

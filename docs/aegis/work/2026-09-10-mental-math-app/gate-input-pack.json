@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "baselineRefs": [],
+  "impactStatement": "docs/aegis/work/2026-09-10-mental-math-app/impact-statement-draft.json",
+  "compatPlan": "Compatibility boundary not yet refined.",
+  "retirementPlan": "status: 无需退役；已显式声明拒绝 VM 池与物化聚合表两个诱人的新增面",
+  "evidenceBundle": [
+    "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-goja-spike-output.json"
+  ]
+}
