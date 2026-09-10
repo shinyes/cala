@@ -799,12 +799,6 @@ func seedProjectWithRounds(t *testing.T, s *Store) {
 	mustExec(`INSERT INTO practice_round(project_id,user_id,seed,started_at,finished_at,total_ms,question_count,correct_count)
 		VALUES (20,1,1,?,?,500,1,1)`, now, now)
 }
-```
-
-> 种子数据规模（后续测试的期望值以此为准）：
-> - 项目 10：作者/ bob / carol 各 1 轮，每轮 1 题 → 3 轮、3 题
-> - 项目 20：作者 1 轮，0 题 → 1 轮、0 题
-> - **合计：4 轮、3 题**；订阅 2 行。
 
 func count(t *testing.T, s *Store, table string) int {
 	t.Helper()
@@ -891,6 +885,11 @@ func TestAttemptUniquePerRound(t *testing.T) {
 	}
 }
 ```
+
+> **种子数据规模**（P1.3 各测试的期望值以此为准）：
+> - 项目 10：作者 / bob / carol 各 1 轮，每轮 1 题 → 3 轮、3 题
+> - 项目 20：作者 1 轮，0 题 → 1 轮、0 题
+> - **合计：4 轮、3 题**；订阅 2 行
 
 5. 验证：
 
