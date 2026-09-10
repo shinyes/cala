@@ -2,9 +2,11 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 // newTestStore 为每个测试建立独立的临时数据库。
@@ -262,5 +264,217 @@ func TestAttemptUniquePerRound(t *testing.T) {
 		VALUES (?,0,'dup','1','{}','1',1,1,1)`, rid)
 	if err == nil {
 		t.Fatal("同轮重复 idx 应当违反 UNIQUE(round_id, idx)")
+	}
+}
+
+// ---------- P1.3 用户 / 会话 / 设置 ----------
+
+func TestCountUsersStartsAtZero(t *testing.T) {
+	s := newTestStore(t)
+	n, err := s.CountUsers()
+	if err != nil {
+		t.Fatalf("CountUsers 失败: %v", err)
+	}
+	if n != 0 {
+		t.Errorf("新库用户数 = %d, 期望 0（引导管理员判定依赖此值）", n)
+	}
+}
+
+func TestCreateUserAndLookup(t *testing.T) {
+	s := newTestStore(t)
+
+	u, err := s.CreateUser("admin", "hash", true)
+	if err != nil {
+		t.Fatalf("CreateUser 失败: %v", err)
+	}
+	if u.ID == 0 || !u.IsAdmin {
+		t.Errorf("返回值异常: %#v", u)
+	}
+	if u.CreatedAt == "" {
+		t.Error("CreatedAt 不应为空")
+	}
+
+	if _, err := s.CreateUser("admin", "hash2", false); !errors.Is(err, ErrUsernameTaken) {
+		t.Errorf("重复用户名应返回 ErrUsernameTaken, 得到 %v", err)
+	}
+
+	got, hash, err := s.AuthenticateLookup("admin")
+	if err != nil {
+		t.Fatalf("AuthenticateLookup 失败: %v", err)
+	}
+	if got.ID != u.ID || hash != "hash" {
+		t.Errorf("查询结果不符: %#v hash=%q", got, hash)
+	}
+	if !got.IsAdmin {
+		t.Error("管理员标记应被读出")
+	}
+
+	if _, _, err := s.AuthenticateLookup("nobody"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("不存在用户应返回 ErrNotFound, 得到 %v", err)
+	}
+}
+
+func TestGetUser(t *testing.T) {
+	s := newTestStore(t)
+	created, err := s.CreateUser("bob", "hash", false)
+	if err != nil {
+		t.Fatalf("CreateUser 失败: %v", err)
+	}
+
+	got, err := s.GetUser(created.ID)
+	if err != nil {
+		t.Fatalf("GetUser 失败: %v", err)
+	}
+	if got.Username != "bob" || got.IsAdmin || got.Disabled {
+		t.Errorf("用户表示不符: %#v", got)
+	}
+
+	if _, err := s.GetUser(99999); !errors.Is(err, ErrNotFound) {
+		t.Errorf("不存在 ID 应返回 ErrNotFound, 得到 %v", err)
+	}
+}
+
+func TestSessionLifecycle(t *testing.T) {
+	s := newTestStore(t)
+	u, err := s.CreateUser("bob", "hash", false)
+	if err != nil {
+		t.Fatalf("CreateUser 失败: %v", err)
+	}
+
+	if err := s.CreateSession("tok", u.ID, time.Now().Add(time.Hour)); err != nil {
+		t.Fatalf("CreateSession 失败: %v", err)
+	}
+	got, err := s.SessionUser("tok")
+	if err != nil {
+		t.Fatalf("SessionUser 失败: %v", err)
+	}
+	if got.ID != u.ID {
+		t.Errorf("会话用户 = %d, 期望 %d", got.ID, u.ID)
+	}
+
+	// 过期会话不可用
+	if err := s.CreateSession("expired", u.ID, time.Now().Add(-time.Minute)); err != nil {
+		t.Fatalf("CreateSession 失败: %v", err)
+	}
+	if _, err := s.SessionUser("expired"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("过期会话应返回 ErrNotFound, 得到 %v", err)
+	}
+
+	// 未知令牌不可用
+	if _, err := s.SessionUser("never-issued"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("未知令牌应返回 ErrNotFound, 得到 %v", err)
+	}
+
+	if err := s.DeleteSession("tok"); err != nil {
+		t.Fatalf("DeleteSession 失败: %v", err)
+	}
+	if _, err := s.SessionUser("tok"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("已吊销会话应返回 ErrNotFound, 得到 %v", err)
+	}
+}
+
+// TestSessionUserRejectsDisabledUser 覆盖「禁用账号应立即失去访问权」。
+// D7 决定暂不提供禁用入口，但数据模型与查询语义需就位，否则日后启用该功能时
+// 会出现「已禁用用户仍可凭旧令牌访问」的漏洞。
+func TestSessionUserRejectsDisabledUser(t *testing.T) {
+	s := newTestStore(t)
+	u, err := s.CreateUser("bob", "hash", false)
+	if err != nil {
+		t.Fatalf("CreateUser 失败: %v", err)
+	}
+	if err := s.CreateSession("tok", u.ID, time.Now().Add(time.Hour)); err != nil {
+		t.Fatalf("CreateSession 失败: %v", err)
+	}
+
+	if _, err := s.DB().Exec(`UPDATE "user" SET disabled = 1 WHERE id = ?`, u.ID); err != nil {
+		t.Fatalf("禁用用户失败: %v", err)
+	}
+
+	if _, err := s.SessionUser("tok"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("已禁用用户的会话应返回 ErrNotFound, 得到 %v", err)
+	}
+}
+
+// TestDeleteUserSessionsRevokesAll 校验「一次吊销该用户全部会话」。
+func TestDeleteUserSessionsRevokesAll(t *testing.T) {
+	s := newTestStore(t)
+	u, err := s.CreateUser("bob", "hash", false)
+	if err != nil {
+		t.Fatalf("CreateUser 失败: %v", err)
+	}
+	other, err := s.CreateUser("carol", "hash", false)
+	if err != nil {
+		t.Fatalf("CreateUser 失败: %v", err)
+	}
+	for _, tok := range []string{"t1", "t2", "t3"} {
+		if err := s.CreateSession(tok, u.ID, time.Now().Add(time.Hour)); err != nil {
+			t.Fatalf("CreateSession 失败: %v", err)
+		}
+	}
+	if err := s.CreateSession("keep", other.ID, time.Now().Add(time.Hour)); err != nil {
+		t.Fatalf("CreateSession 失败: %v", err)
+	}
+
+	if err := s.DeleteUserSessions(u.ID); err != nil {
+		t.Fatalf("DeleteUserSessions 失败: %v", err)
+	}
+
+	for _, tok := range []string{"t1", "t2", "t3"} {
+		if _, err := s.SessionUser(tok); !errors.Is(err, ErrNotFound) {
+			t.Errorf("令牌 %s 应已失效, 得到 %v", tok, err)
+		}
+	}
+	// 他人会话不受影响
+	if _, err := s.SessionUser("keep"); err != nil {
+		t.Errorf("他人会话不应被吊销: %v", err)
+	}
+}
+
+func TestRegistrationOpenDefaultsAndPersists(t *testing.T) {
+	s := newTestStore(t)
+
+	got, err := s.RegistrationOpen(true)
+	if err != nil {
+		t.Fatalf("RegistrationOpen 失败: %v", err)
+	}
+	if !got {
+		t.Error("首次读取应返回 fallback=true")
+	}
+
+	// fallback 应已落库，故换成 false 作为 fallback 也仍读到 true
+	got, err = s.RegistrationOpen(false)
+	if err != nil {
+		t.Fatalf("RegistrationOpen 失败: %v", err)
+	}
+	if !got {
+		t.Error("首次写入后应读到已持久化的 true, 而非新 fallback")
+	}
+
+	if err := s.SetRegistrationOpen(false); err != nil {
+		t.Fatalf("SetRegistrationOpen 失败: %v", err)
+	}
+	got, err = s.RegistrationOpen(true)
+	if err != nil {
+		t.Fatalf("RegistrationOpen 失败: %v", err)
+	}
+	if got {
+		t.Error("写入 false 后应返回 false, 而不是 fallback")
+	}
+}
+
+// TestRegistrationOpenSurvivesCorruptValue 保证存量值损坏时不致服务不可用。
+func TestRegistrationOpenSurvivesCorruptValue(t *testing.T) {
+	s := newTestStore(t)
+	if _, err := s.DB().Exec(
+		`INSERT INTO setting(key,value) VALUES (?,?)`, SettingRegistrationOpen, "not-a-bool"); err != nil {
+		t.Fatalf("写入损坏值失败: %v", err)
+	}
+
+	got, err := s.RegistrationOpen(false)
+	if err != nil {
+		t.Fatalf("损坏值不应导致报错: %v", err)
+	}
+	if got {
+		t.Error("损坏值应退回 fallback=false")
 	}
 }
