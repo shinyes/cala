@@ -45,6 +45,8 @@ Docker 镜像并推送 ghcr，且 GitHub Release 附有镜像 tar.gz。
 | D16 | 判分分歧可观测 | `attempt` 同时记录 `client_is_correct` 与 `server_is_correct`，不一致即计数与告警 | 不假设已穷举所有边界，让系统自行举报遗漏 |
 | D17 | APK 交付 | **构建并签名 release APK，作为 release 附件**（§10.4） | 用户明确要求「需要发布 apk」 |
 | D18 | APK 签名 | **CI 使用正式 keystore 签名**，不使用 debug 签名 | debug 签名有效期短且不可用于正式分发 |
+| D19 | 代码仓库 | `https://github.com/shinyes/cala`，主分支 `main` | 用户已创建；ghcr 镜像名将由 `shinyes/cala` 派生 |
+| D20 | 应用标识 | `applicationId = cc.lcyk.cala`，显示名 `Cala` | 用户指定；applicationId 发布后不可更改 |
 
 > **D2/D13 的修订说明**：D2（客户端本地判分）与 D13（服务端重算）保持不变——前者保证
 > 功能9 的零延迟反馈，后者保证落库权威性。D15 解决的是**两者策略一致性**这一被忽
@@ -477,6 +479,10 @@ CI 流程：从 Secret 解码 keystore → 生成 `key.properties` → `flutter 
 
 另需 `applicationId`（如 `com.<owner>.cala`）与展示用应用名。若 keystore 遗失，
 **已安装用户将无法升级**（只能卸载重装），故需妥善备份。
+
+**本项目取值**（D19/D20）：`applicationId = cc.lcyk.cala`，显示名 `Cala`，
+仓库 `https://github.com/shinyes/cala`，主分支 `main`。
+ghcr 镜像名：`ghcr.io/shinyes/cala`。
 
 ### 10.4 本地测试
 
