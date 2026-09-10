@@ -206,13 +206,33 @@ D2 要求客户端**零往返即时判分**（功能9），D13 要求服务端**
 
 #### 5.5.2 措施一：答案域收敛为两种规范形
 
-保存期校验（复用 §5.3 管线）将作者返回的 `a` 分类：
+保存期校验（复用 §5.3 管线）将作者返回的 `a` 分类。**必须先试数值，再退化文本**：
 
-| 分类结果 | 信封 | 判定 |
+| 分类条件 | 信封 | 判定 |
 |---|---|---|
-| 可解析为有理数（整数 / 小数 / `p/q`） | `{kind:"rational", num:"1", den:"2"}` | 有理数比较 |
-| 非有理数但为 ASCII 规范文本 | `{kind:"text", value:"质数"}` | 文本相等 |
-| 两者皆非 | —— | **拒绝保存** |
+| 清洗后可解析为有理数，且分母非零 | `{kind:"rational", num:"1", den:"2"}` | 有理数比较 |
+| 含**数值字母表以外**字符的非空文本（可含中文） | `{kind:"text", value:"质数"}` | 文本相等 |
+| **仅由数值字母表组成但无法解析**，或分母为零 | —— | **拒绝保存** |
+| 含控制字符，或超过 `MaxAnswerLen` | —— | **拒绝保存** |
+
+**数值字母表** = ASCII `0-9`、`+`、`-`、`.`、`/` 与空白。
+
+第三条是关键：它把「作者本想写数值、却写错了」的答案变成**保存期的明确报错**，
+而不是静默降级成文本答案——后者会让用户在答题时永远答不对，且原因极难排查。
+例如 `1/0`（分母为零）、`1.2.3`、`--5`、`1/` 都必须报错而非当作文本。
+
+> **执行期修正（Design Defect）**：本表原写作「非有理数但为 **ASCII** 规范文本」，
+> 却在同一行用 `质数` 举例——自相矛盾，且按字面实现会让中文文本答案无法使用。
+> 已改为「含数值字母表以外字符的非空文本」，并显式允许中文。
+> 这是修正设计缺陷，不是实现漂移（见 `BASELINE-GOVERNANCE.md` §2）。
+
+**文本答案的规范化**定义为一个**最小且可逐条镜像**的规则，不使用任何 Unicode 归一化库
+（理由见 §5.5.4）：
+
+1. 去除首尾空白；
+2. 内部连续空白折叠为单个 ASCII 空格；
+3. ASCII 大写字母折叠为小写（**仅 ASCII**，不触碰其他字符）；
+4. 不做 NFC/NFD/NFKC 等任何形式变换。
 
 信封随 `a_snapshot` 落库，成为该次答题的判分依据（与 §6.1(3) 的快照策略一致）。
 
@@ -295,7 +315,9 @@ session(id, token_hash, user_id, expires_at, created_at)
 setting(key, value)                    -- registration_open
 
 project(id, owner_id, title, description, question_count,
-        cfg_json, rule_source, share_token, share_token_updated_at,
+        cfg_json, rule_source,
+        tolerance_num, tolerance_den,          -- 可空；两者皆空 = 精确比较
+        share_token, share_token_updated_at,
         created_at, updated_at)
 
 subscription(user_id, project_id, created_at)
@@ -310,6 +332,20 @@ attempt(id, round_id, idx, q_snapshot, a_snapshot, a_envelope_json,
         user_input, client_is_correct, server_is_correct, elapsed_ms)
         -- UNIQUE(round_id, idx)
 ```
+
+**容差为独立列而非放在 `cfg_json` 内**（D3 的落地方式）：
+
+- `cfg_json` 是**作者自由定义的规则配置**，平台不解释其结构；
+- 容差是**平台的判分语义**，必须被类型化、被校验、有单一 owner；
+- 若放进 `cfg_json`，同一个概念就有两个来源（作者可写 `cfg.tolerance`，
+  而平台按列读取），这正是本项目在 §5.5 里刻意消除的那类分歧。
+
+`tolerance_num` 与 `tolerance_den` 必须**同时为空**（精确比较）或**同时非空且 `den > 0`**。
+两个整数而非浮点，是为了让容差本身也留在 §5.5.3 的无浮点判分路径上。
+
+> **执行期修正（Design Defect）**：D3 承诺「项目级可选容差」，但本节原 schema 没有对应字段。
+> 这是设计内部不一致，已在 P3 通过迁移 `0002_add_tolerance.sql` 补齐
+> （P0 建立 `0001_init.sql` 时未察觉；§16 曾希望 schema 一次建全，此处是那次遗漏的修正）。
 
 ### 6.1 核心不变量
 

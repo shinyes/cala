@@ -99,7 +99,8 @@ func TestRegisterTrimsUsername(t *testing.T) {
 	}
 	if _, _, err := svc.Login("alice", "password123"); err != nil {
 		t.Errorf("应以去空白后的用户名登录成功: %v", err)
-	}}
+	}
+}
 
 // TestPasswordTooShortRejectedBeforeAnyWrite 保证口令不合法时不会留下半个用户。
 func TestPasswordTooShortRejectedBeforeAnyWrite(t *testing.T) {
