@@ -1,0 +1,20 @@
+services:
+  cala:
+    build:
+      context: ./backend
+    image: ghcr.io/shinyes/cala:local
+    ports:
+      - "8080:8080"
+    environment:
+      CALA_DB: /data/cala.db
+      CALA_ADDR: ":8080"
+      # 生产环境请显式设置为 false，并先注册管理员账号。
+      # 注意：即使为 false，系统尚无用户时首个注册者仍会成为管理员（规格 §6.2），
+      # 否则全新部署会自我锁死。
+      CALA_REGISTRATION_OPEN: "true"
+    volumes:
+      - cala-data:/data
+    restart: unless-stopped
+
+volumes:
+  cala-data:
