@@ -1,0 +1,13 @@
+# 构建上下文排除项：保持镜像层缓存有效，并避免把数据库与测试带入镜像
+.git
+.gitignore
+bin/
+tmp/
+*.db
+*.db-wal
+*.db-shm
+*_test.go
+docs/
+app/
+Dockerfile
+.dockerignore
