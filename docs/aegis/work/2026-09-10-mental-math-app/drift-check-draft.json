@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "taskId": "2026-09-10-mental-math-app",
+  "taskIntentRef": "docs/aegis/work/2026-09-10-mental-math-app/task-intent-draft.json",
+  "baselineRefs": [],
+  "scopeStatus": "not-yet-verified",
+  "compatStatus": "not-yet-verified",
+  "retirementStatus": "not-yet-verified",
+  "newRiskSignals": [
+    "规则契约发布后难改；跨用户级联删除不可逆；订阅者退订即清空历史"
+  ],
+  "decision": "needs-verification"
+}

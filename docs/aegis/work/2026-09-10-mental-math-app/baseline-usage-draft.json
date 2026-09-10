@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "taskId": "2026-09-10-mental-math-app",
+  "requiredBaselineRefs": [],
+  "deliveredContextRefs": [],
+  "acknowledgedBeforePlanRefs": [],
+  "citedInPlanRefs": [],
+  "missingRefs": [],
+  "decision": "continue"
+}

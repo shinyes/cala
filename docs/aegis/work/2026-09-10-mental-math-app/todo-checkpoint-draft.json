@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "taskId": "2026-09-10-mental-math-app",
+  "currentTodo": "写并提交设计规格",
+  "completedTodos": [],
+  "activeSlice": "设计规格落盘与用户评审",
+  "evidenceRefs": [],
+  "blockedOn": null,
+  "nextStep": "评审通过后进入 writing-plans 制定实施计划",
+  "updatedAt": "2026-09-10"
+}

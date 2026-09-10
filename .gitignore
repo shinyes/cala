@@ -1,0 +1,52 @@
+# ---- Go ----
+backend/bin/
+backend/tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# ---- Flutter / Dart ----
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.packages
+app/build/
+app/.pub-cache/
+app/.pub/
+**/generated_plugin_registrant.dart
+*.iml
+
+# NOTE: app/pubspec.lock IS committed (application, not library)
+
+# ---- IDE / Editor ----
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Runtime data / secrets ----
+# SQLite database files are runtime state, never committed
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+.env
+.env.*
+!.env.example
+
+# ---- Build artifacts ----
+dist/
+release/
+*.tar.gz

@@ -1,0 +1,93 @@
+﻿=== 1. ES feature matrix (what rule authors can write) ===
+  [ok  ] let/const/template-literal      
+  [ok  ] arrow+default params            
+  [ok  ] destructuring+defaults          
+  [ok  ] spread/rest                     
+  [ok  ] class+getter                    
+  [ok  ] for-of + Set/Map                
+  [ok  ] optional chaining ?.            
+  [ok  ] nullish coalescing ??           
+  [ok  ] exponent **                     
+  [ok  ] BigInt literal                  
+  [ok  ] String.replaceAll               
+  [ok  ] Array.flat/.at                  
+  [ok  ] Object.entries/fromEntries      
+  [ok  ] Math.hypot/trunc/cbrt           
+  [ok  ] JSON roundtrip                  
+  [ok  ] regex named groups              
+  [ok  ] regex lookbehind                
+  [ok  ] generators                      
+  [ok  ] async/Promise syntax            
+  [ok  ] Symbol.iterator                 
+  [ok  ] try/catch/finally               
+  [ok  ] Number.isInteger/parseInt radix 
+  [ok  ] Proxy/Reflect                   
+  [ok  ] WeakMap                         
+  [ok  ] globalThis                      
+  [FAIL] structuredClone                 
+  [FAIL] Array.prototype.group           
+  [ok  ] String.matchAll                 
+  [ok  ] Array.includes/at               
+  [ok  ] Number.toFixed rounding         
+  --> 28 pass / 2 fail
+
+=== 2. Sandbox surface ===
+  -- host globals (want all undefined) --
+    require          -> undefined  OK
+    process          -> undefined  OK
+    module           -> undefined  OK
+    exports          -> undefined  OK
+    fetch            -> undefined  OK
+    XMLHttpRequest   -> undefined  OK
+    setTimeout       -> undefined  OK
+    setInterval      -> undefined  OK
+    Buffer           -> undefined  OK
+    console          -> undefined  OK
+    eval             -> PRESENT <<< func(goja.FunctionCall) goja.Value
+  -- stdlib (want present) --
+    missing standards: []
+  -- escape attempts --
+    typeof globalThis.require                      => undefined
+    try{ (function(){return this})() }catch(e){'blocked'} => map[]
+    typeof new Function('return typeof require')() => string
+    typeof globalThis.global                       => undefined
+    typeof globalThis.module                       => undefined
+
+=== 3. Containment: time, recursion ===
+  while(true): killed=true after=60ms err="rule timeout at <eval>:1:23(6)"
+  reusable after ClearInterrupt: true (err=<nil>)
+  infinite recursion @maxStack=200: recovered=true after=1ms err=at f (<eval>:1:24(5))
+  infinite recursion @DEFAULT stack + 500ms interrupt: recovered=true after=505ms err=timeout at f (<eval>:1:25(3))
+  -> stack cap alone suffices: true ; interrupt alone suffices: true
+
+=== 4. Determinism via SetRandSource / SetTimeSource ===
+  frozen seed=42 run A: 43 + 15 = ? | 64 + 28 = ? | 13 + 44 = ? | 83 + 44 = ?
+  frozen seed=42 run B: 43 + 15 = ? | 64 + 28 = ? | 13 + 44 = ? | 83 + 44 = ?
+  frozen seed=43      : 12 + 56 = ? | 53 + 42 = ? | 42 + 66 = ? | 25 + 71 = ?
+  REPRODUCIBLE(same seed identical): true
+  VARIES(diff seed differs):         true
+  UNFROZEN seed=42 twice (expect differ): 71 + 45 = ? 75 + 40 = ? 82 + 13 = ? 79 + 34 = ? / 53 + 84 = ? 26 + 31 = ? 18 + 73 = ? 16 + 15 = ?
+
+=== 5. Return contract -> Go ===
+  AssertFunction ok=true
+  err=<nil>
+  exported=map[string]interface {}{"answer":"9", "meta":map[string]interface {}{"a":5, "b":4, "d":"2026-09-10"}, "question":"5 + 4 = ?"}
+  AssertFunction(non-fn) ok=false (this is the validation gate)
+
+=== 6. Cost: per-question overhead ===
+  compile err=<nil>
+  NOTE RunProgram completion value = undefined (function decl => undefined, must use Get)
+  20000 calls, reused vm:       total=127ms per-call=6.366µs
+  500 fresh vm(cold):         total=7ms per-vm=14.017µs  <<< pool candidate
+
+=== 7. Author-source validation errors ===
+  top-level throw    -> REJECTED at eval: Error: boom at <eval>:1:7(2)
+  undefined global   -> REJECTED at call: ReferenceError: notDefined is not defined at generate (<eval>:1:29(1))
+  returns number     -> REJECTED: returned int64 not object
+  returns null       -> REJECTED: returned null/undefined
+  missing generate   -> REJECTED: no callable generate
+  syntax error       -> REJECTED at eval: SyntaxError: SyntaxError: (anonymous): Line 1:29 Unexpected token } (and 9 more errors)
+  unterminated cmt   -> REJECTED at eval: SyntaxError: SyntaxError: (anonymous): Line 1:8 Unexpected end of input
+
+=== 8. Per-item interrupt budget (hostile rule inside a normal exercise) ===
+  killed at question index=306 after=21ms (loop continued past 305 fine)
