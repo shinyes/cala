@@ -21,9 +21,6 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       version_code: ${{ steps.version.outputs.version_code }}
-      # 由 preflight 解析好的别名，供 apk job 直接使用。
-      # 这样「别名规范化」只有一处实现，两个 job 不可能得出不同结果。
-      key_alias: ${{ steps.keystore.outputs.key_alias }}
     steps:
       - uses: actions/checkout@v6
 
@@ -143,9 +140,6 @@ jobs:
             exit 1
           fi
           echo "别名 '$alias_normalized' 校验通过"
-
-          # 把解析结果交给 apk job，使「别名规范化」只有这一处实现。
-          echo "key_alias=$alias_normalized" >> "$GITHUB_OUTPUT"
 
           rm -f "$RUNNER_TEMP/preflight.jks"
 
@@ -273,16 +267,28 @@ jobs:
           # 表现为「口令明明是对的却签名失败」。
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          # 别名直接使用 preflight 的解析结果，**不在此重复规范化**：
-          # 同一逻辑有两份实现就会漂移（先前修「别名含空白」时正是要改两处）。
-          # preflight 已校验该别名确实存在于 keystore 中。
-          RESOLVED_ALIAS: ${{ needs.preflight.outputs.key_alias }}
+          # 这里重新读取 secret 并**本地规范化**，而不是取 preflight 的 job output。
+          #
+          # 原因（记录一次实测失败）：曾把规范化后的别名经 `key_alias` job output
+          # 传给本 job，运行时却取到空值（run #34568800826）。同一 job 的
+          # `version` output 工作正常，且两处引用文本、step id、needs 声明都经核对无误；
+          # 而本环境无法读取 Actions 日志（API 需认证），无法进一步定位。
+          #
+          # 取舍：与其继续靠猜测消耗发布轮次，不如去掉这个跨 job 依赖。
+          # 重复的只是一行**纯确定性转换**（规范化），而真正需要单一 owner 的
+          # **校验**仍然只在 preflight 一处（那里会硬失败并列出可用别名）。
+          # 决策权也仍在用户手里：别名取自 secret，工具不代为选择。
+          RESOLVED_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           set -euo pipefail
           printf '%s' "$KS_B64" | tr -d ' \t\r\n' | base64 -d > "$RUNNER_TEMP/release.jks"
 
-          if [ -z "${RESOLVED_ALIAS:-}" ]; then
-            echo "::error::preflight 未提供解析后的别名（key_alias 输出为空）"
+          # 与 preflight 相同的规范化：只保留别名可能出现的字符。
+          # 剥离的是不可见字符（NBSP、全角空格、零宽空格等），
+          # preflight 已确保规范化后的名字确实存在于 keystore 中。
+          alias_normalized="$(printf '%s' "$RESOLVED_ALIAS" | tr -cd 'A-Za-z0-9_.-')"
+          if [ -z "$alias_normalized" ]; then
+            echo "::error::ANDROID_KEY_ALIAS 为空或只含不可见字符"
             exit 1
           fi
 
@@ -290,14 +296,19 @@ jobs:
           cat > app/android/key.properties <<EOF
           storePassword=${KS_PASS}
           keyPassword=${KEY_PASS}
-          keyAlias=${RESOLVED_ALIAS}
+          keyAlias=${alias_normalized}
           storeFile=$RUNNER_TEMP/release.jks
           EOF
+
+          # key.properties 必须以换行结尾，否则 Java 的 Properties 读取时
+          # 可能忽略最后一行（不同实现对此处理不一致，明确保证更稳妥）。
+          printf '\n' >> app/android/key.properties
 
           # 只确认文件就位，绝不打印内容（含口令）
           test -s app/android/key.properties && echo "key.properties 已生成"
           test -s "$RUNNER_TEMP/release.jks" && echo "keystore 已就位"
-          echo "使用别名: $RESOLVED_ALIAS"
+          echo "使用别名: $alias_normalized"
+          echo "key.properties 行数: $(wc -l < app/android/key.properties)"
 
       - name: 构建 release APK
         working-directory: app
