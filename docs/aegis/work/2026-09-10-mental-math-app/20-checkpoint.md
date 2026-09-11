@@ -333,3 +333,15 @@
 - §6.5; ADR-0006
 - Blocked on: 无
 - Next step: 打 v0.0.3 tag; 真机安装验证联网与服务器地址配置
+
+## Checkpoint Update
+
+- Current todo: 全部完成; v0.0.3 已发布
+- Active slice: 交付
+- Completed todos:
+- v0.0.3 发布成功(run #34590282901, 6 job 全 success)
+- 已发布 APK 复核: INTERNET 权限与明文配置随签名产物生效; 签名身份跨版本稳定
+- Evidence refs:
+- §6.5
+- Blocked on: 无
+- Next step: 真机安装并验证联网 + 配置服务器地址 + 覆盖安装

@@ -1,17 +1,16 @@
 {
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
-  "currentTodo": "v0.0.3 待发布",
+  "currentTodo": "全部完成; v0.0.3 已发布",
   "completedTodos": [
-    "手机端可配置服务端地址 + 修复 release APK 无 INTERNET 权限与明文限制",
-    "ADR-0006 记录该决策; 基线 §5.1/§7 同步",
-    "docker-compose.yml 升到 0.0.3"
+    "v0.0.3 发布成功(run #34590282901, 6 job 全 success)",
+    "已发布 APK 复核: INTERNET 权限与明文配置随签名产物生效; 签名身份跨版本稳定"
   ],
-  "activeSlice": "发布 v0.0.3",
+  "activeSlice": "交付",
   "evidenceRefs": [
-    "§6.5; ADR-0006"
+    "§6.5"
   ],
   "blockedOn": "无",
-  "nextStep": "打 v0.0.3 tag; 真机安装验证联网与服务器地址配置",
+  "nextStep": "真机安装并验证联网 + 配置服务器地址 + 覆盖安装",
   "updatedAt": "2026-09-11"
 }
