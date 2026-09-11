@@ -145,6 +145,56 @@ type CompletedRound struct {
 	StaleProject bool `json:"staleProject"`
 }
 
+// AttemptView 是回传给客户端的答题记录（错题页使用）。
+//
+// 同时返回 client_is_correct 与 server_is_correct：错题筛选应以
+// server_is_correct 为准（规格 §6.1(5)），但把两者都给客户端，
+// 便于界面如实呈现「本地判定与服务端不一致」这一情况。
+type AttemptView struct {
+	Index           int    `json:"idx"`
+	QSnapshot       string `json:"qSnapshot"`
+	ASnapshot       string `json:"aSnapshot"`
+	EnvelopeJSON    string `json:"envelopeJson"`
+	UserInput       string `json:"userInput"`
+	ClientIsCorrect bool   `json:"clientIsCorrect"`
+	ServerIsCorrect bool   `json:"serverIsCorrect"`
+	ElapsedMs       int64  `json:"elapsedMs"`
+}
+
+// Attempts 读取某轮的答题记录。
+//
+// 仅轮次所属用户可读：答题记录是个人数据，他人（含项目作者）不得查看。
+func (s *RoundService) Attempts(userID, roundID int64) ([]AttemptView, error) {
+	r, err := s.store.GetRound(roundID)
+	if err != nil {
+		return nil, err
+	}
+	if r.UserID != userID {
+		// 刻意返回 ErrNotFound 而非「无权访问」：不泄露该轮次是否存在，
+		// 避免通过遍历 ID 探测他人是否做过练习。
+		return nil, store.ErrNotFound
+	}
+
+	rows, err := s.store.ListAttemptsByRound(roundID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]AttemptView, 0, len(rows))
+	for _, a := range rows {
+		out = append(out, AttemptView{
+			Index:           a.Index,
+			QSnapshot:       a.QSnapshot,
+			ASnapshot:       a.ASnapshot,
+			EnvelopeJSON:    a.EnvelopeJSON,
+			UserInput:       a.UserInput,
+			ClientIsCorrect: a.ClientIsCorrect,
+			ServerIsCorrect: a.ServerIsCorrect,
+			ElapsedMs:       a.ElapsedMs,
+		})
+	}
+	return out, nil
+}
+
 // Complete 落库一轮练习。
 //
 // 关键行为（规格 §7 五条）：
@@ -329,14 +379,28 @@ func normalizeTime(s, field string) (string, error) {
 	return t.UTC().Format(time.RFC3339), nil
 }
 
+// maxSeed 是种子上限（2^53）。
+//
+// 为什么不能更大：种子经 JSON 以**数字**形式往返给客户端，再由客户端回传。
+// JSON 数字在 JavaScript（以及 Flutter Web 的 dart2js，其中 int 就是 double）
+// 中只有 53 位尾数精度。若种子超过 2^53，客户端回传的值会与原值不同，
+// 服务端据此重放将得到**完全不同的题目**，于是每一题都被判错。
+//
+// 这不是理论风险：本项目的 Go 测试曾用 float64 解析回传种子，
+// 立即复现了「全错」的现象。
+//
+// 2^53 ≈ 9.0e15 种取值，对「每轮一个不可预测种子」的用途绰绰有余。
+const maxSeed = int64(1) << 53
+
 // newSeed 生成一轮的随机种子。
 //
-// 用 crypto/rand 而非 math/rand：种子决定了题目序列，若可预测，
-// 用户就能提前算出题目。这不是安全攸关，但预测性没有任好处，成本也相同。
+// 用 crypto/rand 而非 math/rand：种子决定题目序列，可预测没有任何好处，
+// 而两者的成本相同。
 func newSeed() (int64, error) {
 	var b [8]byte
 	if _, err := rand.Read(b[:]); err != nil {
 		return 0, fmt.Errorf("生成随机种子失败: %w", err)
 	}
-	return int64(binary.BigEndian.Uint64(b[:]) >> 1), nil // 保证非负
+	v := int64(binary.BigEndian.Uint64(b[:]) >> 1) // 保证非负
+	return v % maxSeed, nil
 }

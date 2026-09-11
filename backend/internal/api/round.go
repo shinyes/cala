@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -14,6 +15,7 @@ import (
 func (h *Handlers) registerRounds(r fiber.Router) {
 	r.Post("/rounds/start", h.requireAuth, h.handleStartRound)
 	r.Post("/rounds/complete", h.requireAuth, h.handleCompleteRound)
+	r.Get("/rounds/:id/attempts", h.requireAuth, h.handleRoundAttempts)
 }
 
 type startRoundReq struct {
@@ -47,6 +49,23 @@ func (h *Handlers) handleCompleteRound(c *fiber.Ctx) error {
 		return roundError(c, err)
 	}
 	return c.Status(fiber.StatusCreated).JSON(res)
+}
+
+// handleRoundAttempts 返回某轮已落库的答题记录（错题页数据源）。
+//
+// 仅轮次所属用户可读：答题记录是个人数据，他人（包括项目作者）不应看到。
+func (h *Handlers) handleRoundAttempts(c *fiber.Ctx) error {
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil || id <= 0 {
+		fail(c, fiber.StatusBadRequest, CodeBadRequest, "轮次 ID 不合法")
+		return nil
+	}
+
+	attempts, err := h.Rounds.Attempts(currentUser(c).ID, id)
+	if err != nil {
+		return roundError(c, err)
+	}
+	return c.JSON(fiber.Map{"attempts": attempts})
 }
 
 // roundError 把轮次相关错误映射为统一错误契约。

@@ -419,6 +419,57 @@ func TestStartRejectsBrokenRuleAsRuleError(t *testing.T) {
 	}
 }
 
+// TestSeedSurvivesFloat64JSONRoundTrip 是一个**跨端契约**断言。
+//
+// 种子经 JSON 以数字形式往返：服务端 -> 客户端 -> 服务端。
+// JavaScript（以及 Flutter Web 的 dart2js，其中 int 即 double）只有 53 位尾数精度，
+// 超过 2^53 的整数在往返后会变成另一个值。一旦发生，
+// 服务端用回传种子重放会得到**完全不同的题目**，于是每一题都被判错。
+//
+// 本测试用 float64 模拟 JS 侧的解析行为，断言往返无损。
+func TestSeedSurvivesFloat64JSONRoundTrip(t *testing.T) {
+	rs, ps, st := newRoundSvc(t)
+	owner := makeUser(t, st, "owner")
+	p, err := ps.Create(owner, validInput())
+	if err != nil {
+		t.Fatalf("创建项目失败: %v", err)
+	}
+
+	// 多轮取样：种子上限若设置不当，某些值必然出问题
+	for i := 0; i < 50; i++ {
+		res, err := rs.Start(owner, p.ID)
+		if err != nil {
+			t.Fatalf("Start 失败: %v", err)
+		}
+
+		// 模拟 JSON -> JS number 的往返
+		back := int64(float64(res.Seed))
+		if back != res.Seed {
+			t.Fatalf("种子 %d 经 float64 往返后变为 %d —— "+
+				"在 Flutter Web / JavaScript 上会导致服务端重放出不同题目、每题判错",
+				res.Seed, back)
+		}
+		if res.Seed < 0 {
+			t.Fatalf("种子不应为负: %d", res.Seed)
+		}
+		if res.Seed >= maxSeed {
+			t.Fatalf("种子 %d 超出安全上限 %d", res.Seed, maxSeed)
+		}
+	}
+}
+
+// TestSeedAboveLimitWouldBreakReplay 证明上一条测试的**必要性**：
+// 若刻意用一个超过 2^53 的种子，float64 往返确实会失效。
+// 没有这条，上面的断言可能只是碰巧通过。
+func TestSeedAboveLimitWouldBreakReplay(t *testing.T) {
+	huge := int64(1)<<53 + 1 // 2^53 + 1
+	back := int64(float64(huge))
+	if back == huge {
+		t.Skip("当前平台 float64 可精确表示该值，本测试无意义")
+	}
+	t.Logf("证明：%d 经 float64 往返后变为 %d（相差 %d）", huge, back, back-huge)
+}
+
 // TestAnswersUseServerSideInputNotClientSupplied 确认服务端不采信客户端上报的题面。
 func TestServerDoesNotTrustClientSuppliedText(t *testing.T) {
 	ResetDiscrepancyCount()

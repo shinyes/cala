@@ -539,3 +539,123 @@ func TestRoundStartMissingProjectID(t *testing.T) {
 		t.Errorf("错误码 = %q, 期望 %q", code, CodeBadRequest)
 	}
 }
+
+// TestRoundAttemptsEndpoint 覆盖错题页的数据源。
+func TestRoundAttemptsEndpoint(t *testing.T) {
+	app := newTestApp(t, true)
+	token := register(t, app, "alice", "password123")
+	projectID := createProject(t, app, token, "口算")
+
+	// 一半答对、一半答错
+	roundID := startAndCompleteMixed(t, app, token, projectID)
+
+	status, body := do(t, app, http.MethodGet,
+		fmt.Sprintf("/api/rounds/%d/attempts", roundID), "", token)
+	if status != http.StatusOK {
+		t.Fatalf("应返回 200, 得到 %d: %#v", status, body)
+	}
+
+	raw, _ := body["attempts"].([]any)
+	if len(raw) == 0 {
+		t.Fatal("应返回答题记录")
+	}
+
+	sawCorrect, sawWrong := false, false
+	for _, r := range raw {
+		a, _ := r.(map[string]any)
+		if a["serverIsCorrect"] == true {
+			sawCorrect = true
+		} else {
+			sawWrong = true
+		}
+		// 快照与信封都要有：错题重练依赖它们（不重新出题）
+		if a["qSnapshot"] == "" || a["aSnapshot"] == "" {
+			t.Errorf("缺少题面/答案快照: %#v", a)
+		}
+		if a["envelopeJson"] == "" {
+			t.Errorf("缺少判分信封: %#v", a)
+		}
+	}
+	if !sawCorrect || !sawWrong {
+		t.Errorf("应同时存在答对与答错的记录 (correct=%v wrong=%v)", sawCorrect, sawWrong)
+	}
+}
+
+// TestRoundAttemptsIsPrivateToOwner 是隐私断言：
+// 答题记录是个人数据，他人（**包括项目作者**）不得查看。
+func TestRoundAttemptsIsPrivateToOwner(t *testing.T) {
+	app, st := newTestAppWithStore(t, true)
+	aliceToken := register(t, app, "alice", "password123")
+	bobToken := register(t, app, "bob", "password123")
+
+	// Alice 建项目，Bob 订阅并做一轮
+	projectID := createProject(t, app, aliceToken, "共享项目")
+	if err := st.Subscribe(userID(t, st, "bob"), projectID); err != nil {
+		t.Fatalf("Subscribe 失败: %v", err)
+	}
+	bobRound := startAndCompleteMixed(t, app, bobToken, projectID)
+
+	// Bob 自己能读
+	if status, _ := do(t, app, http.MethodGet,
+		fmt.Sprintf("/api/rounds/%d/attempts", bobRound), "", bobToken); status != http.StatusOK {
+		t.Errorf("本人应能读取自己的答题记录, 得到 %d", status)
+	}
+
+	// 作者 Alice 不能读 Bob 的答题记录
+	status, _ := do(t, app, http.MethodGet,
+		fmt.Sprintf("/api/rounds/%d/attempts", bobRound), "", aliceToken)
+	if status != http.StatusNotFound {
+		t.Errorf("作者不应能读取他人答题记录（期望 404 以不泄露存在性）, 得到 %d", status)
+	}
+}
+
+func TestRoundAttemptsBadID(t *testing.T) {
+	app := newTestApp(t, true)
+	token := register(t, app, "alice", "password123")
+
+	for _, bad := range []string{"abc", "0", "-1"} {
+		status, _ := do(t, app, http.MethodGet, "/api/rounds/"+bad+"/attempts", "", token)
+		if status != http.StatusBadRequest {
+			t.Errorf("轮次 ID %q 应返回 400, 得到 %d", bad, status)
+		}
+	}
+}
+
+// startAndCompleteMixed 走完一轮，偶数题答对、奇数题答错，返回 roundId。
+func startAndCompleteMixed(t *testing.T, app *fiber.App, token string, projectID int64) int64 {
+	t.Helper()
+	status, body := do(t, app, http.MethodPost, "/api/rounds/start",
+		fmt.Sprintf(`{"projectId":%d}`, projectID), token)
+	if status != http.StatusOK {
+		t.Fatalf("start 失败: %d", status)
+	}
+	seed, _ := body["seed"].(float64)
+	questions, _ := body["questions"].([]any)
+
+	attempts := make([]map[string]any, 0, len(questions))
+	for i, raw := range questions {
+		q, _ := raw.(map[string]any)
+		answer, _ := q["a"].(string)
+		if i%2 == 0 {
+			attempts = append(attempts, map[string]any{
+				"idx": i, "input": answer, "clientIsCorrect": true, "elapsedMs": 800,
+			})
+		} else {
+			attempts = append(attempts, map[string]any{
+				"idx": i, "input": "999999", "clientIsCorrect": false, "elapsedMs": 900,
+			})
+		}
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	reqBody, _ := json.Marshal(map[string]any{
+		"projectId": projectID, "seed": int64(seed),
+		"startedAt": now, "finishedAt": now, "attempts": attempts,
+	})
+	status, body = do(t, app, http.MethodPost, "/api/rounds/complete", string(reqBody), token)
+	if status != http.StatusCreated {
+		t.Fatalf("complete 失败: %d %#v", status, body)
+	}
+	id, _ := body["roundId"].(float64)
+	return int64(id)
+}
