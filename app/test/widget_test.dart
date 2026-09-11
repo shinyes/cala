@@ -12,7 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// 更稳定也更快。本文件只验证「UI 把状态渲染对、把输入转发对」。
 void main() {
   group('Keypad', () {
-    testWidgets('包含完整字母表 0-9 . - /', (tester) async {
+    testWidgets('包含完整字母表 0-9 . -（不含 /）', (tester) async {
       await tester.pumpWidget(
         CupertinoApp(
           home: CupertinoPageScaffold(
@@ -29,10 +29,15 @@ void main() {
         expect(find.text(k), findsOneWidget, reason: '缺少数字键 $k');
       }
       expect(find.text('.'), findsOneWidget);
-      expect(find.text('-'), findsOneWidget);
-      expect(find.text('/'), findsOneWidget);
+      expect(find.text('-'), findsOneWidget, reason: '负数答案需要负号');
       expect(find.text('⌫'), findsOneWidget);
       expect(find.text('确定'), findsOneWidget);
+
+      // `/` 被刻意移除：判分是有理数比较，有限小数写法即可覆盖分数答案，
+      // 而无限循环小数（如 1/3）须靠容差而非分数键解决。
+      // 这里断言它不存在，避免日后有人「顺手加回来」而绕过该决定。
+      expect(find.text('/'), findsNothing,
+          reason: '分数键已被刻意移除，见 keypad.dart 的字母表说明');
     });
 
     testWidgets('点击数字键回调字符', (tester) async {
@@ -50,10 +55,12 @@ void main() {
       );
 
       await tester.tap(find.text('7'));
-      await tester.tap(find.text('/'));
+      await tester.tap(find.text('-'));
+      await tester.tap(find.text('.'));
       await tester.pump();
 
-      expect(tapped, ['7', '/']);
+      // 覆盖「负数 + 小数」的真实输入路径（如 -0.5）
+      expect(tapped, ['7', '-', '.']);
     });
 
     testWidgets('退格与确定分别回调', (tester) async {
