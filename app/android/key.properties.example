@@ -1,0 +1,31 @@
+# 复制为 android/key.properties 后填入真实值。
+#
+# 该文件已被 .gitignore 排除，**绝不会入库**；
+# .github/workflows/release.yml 的 preflight 还会断言它未被提交。
+#
+# 生成 keystore：
+#   keytool -genkeypair -v -keystore cala-release.jks -storetype JKS \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias cala
+#
+# 重要：keystore 与口令一旦遗失，**已安装用户将无法覆盖升级**
+# （Android 要求升级包的签名与已安装版本一致），只能卸载重装。
+# 请离线备份 keystore 与口令。
+#
+# 转成 CI 用的 base64（必须是单行、不含换行）：
+#   PowerShell:
+#     [Convert]::ToBase64String([IO.File]::ReadAllBytes("cala-release.jks"))
+#   不要用 certutil —— 它会加上 BEGIN/END header 并折行，
+#   虽然工作流会清理空白，但保持单行最省事。
+#
+# 需要配置的 4 个 repository secret（Settings > Secrets and variables > Actions）：
+#   ANDROID_KEYSTORE_BASE64     上面的 base64 字符串
+#   ANDROID_KEYSTORE_PASSWORD   下面的 storePassword
+#   ANDROID_KEY_ALIAS           下面的 keyAlias
+#   ANDROID_KEY_PASSWORD        下面的 keyPassword
+# 注意必须是**仓库级** secret；若改为环境级，工作流的 job 需要声明 environment:，
+# 否则 secret 会解析为空字符串并导致签名失败。
+
+storePassword=你的keystore口令
+keyPassword=你的密钥口令
+keyAlias=cala
+storeFile=/绝对路径/cala-release.jks

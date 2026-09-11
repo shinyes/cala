@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# 正式签名材料：绝不入库
+# key.properties 含 keystore 口令；*.jks/*.keystore 是签名密钥本身。
+# 发布工作流的 preflight 会断言它们未被 git 跟踪。
+key.properties
+*.jks
+*.keystore

@@ -34,26 +34,45 @@ cd backend && go run ./cmd/server
 cd app && flutter run -d chrome
 ```
 
-### Windows 开发者必读：pub cache 必须与项目同盘
+### Windows 开发者必读：Kotlin 增量编译与跨盘符
 
-若 pub cache 与项目位于**不同盘符**（例如项目在 `D:` 而 pub cache 在 `C:\Users\...\AppData\Local\Pub\Cache`），
-Android 构建会失败于 `:shared_preferences_android:compileDebugKotlin`，报
-`Could not close incremental caches`。
+若 pub cache 与项目位于**不同盘符**（例如项目在 `D:` 而 pub cache 在
+`C:\Users\...\AppData\Local\Pub\Cache`），Android 构建会失败，报：
+ 
+```
+Could not close incremental caches in .../caches-jvm/jvm/kotlin
+```
 
-原因：Kotlin 增量编译器在 flush 缓存时对源文件做 `Path.relativize()`，
-而 Windows 下**跨盘符无法相对化**，抛 `IllegalArgumentException`。
-外层「增量缓存」错误信息具有误导性，真正的原因只出现在 `--stacktrace` 的 `Suppressed` 链里。
+**这条信息具有误导性。** 真正的原因藏在 `--stacktrace` 的 `Suppressed` 链里：
 
-修复（令两者同盘），例如把 pub cache 放到与项目相同的盘：
+```
+IllegalArgumentException: this and base files have different roots:
+  C:\Users\<user>\AppData\Local\Pub\Cache\...\SomePlugin.kt
+  D:\path\to\project\android
+```
+
+Kotlin 增量编译器在 flush 缓存时对源文件调用 `Path.relativize()`，
+而 Windows 下**跨盘符无法相对化**，于是抛异常并被包装成「无法关闭增量缓存」。
+
+**本仓库的处理方式**：`app/android/gradle.properties` 里设了
+`kotlin.incremental=false`，从根上避开这条代码路径。
+
+之所以不依赖环境变量来修，是因为环境变量**只对设置之后启动的进程生效**：
+已经开着的终端、IDE、构建服务看到的仍是旧环境，于是失败会以
+「debug 构建成功但 release 构建失败」这类难以捉摸的形式回归。
+仓库不应依赖 shell 是怎么启动的。
+
+代价：本地重复构建失去 Kotlin 增量编译（数十秒）。
+**CI 不受影响**——CI 每次都是冷构建，本就没有增量状态可复用。
+
+若想恢复更快的本地构建，请修根因（让 pub cache 与项目同盘），
+再把该行改回 `true`：
 
 ```powershell
 [Environment]::SetEnvironmentVariable("PUB_CACHE", "D:\Programs\Pub\Cache", "User")
 ```
 
-然后重开终端并 `flutter pub get`。
-
-CI 不受影响（Linux 单文件系统）。仅在无法同盘时，才退而设置
-`kotlin.incremental=false`——它会掩盖成因并使构建变慢。
+然后**重开终端**并 `flutter pub get`。
 
 测试：
 

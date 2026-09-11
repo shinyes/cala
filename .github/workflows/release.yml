@@ -1,0 +1,366 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write # 创建 Release 并上传附件
+  packages: write # 推送 ghcr.io
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  # 前置校验：把所有「配置缺失/配置错误」类问题集中在这里失败，并给出可读信息。
+  # 否则它们会在后续 job 里以晦涩的 keytool / gradle 错误暴露，排查成本高。
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      version_code: ${{ steps.version.outputs.version_code }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # preflight 会用 keytool 试开 keystore，因此这里显式准备 JDK。
+      # 不依赖 runner 镜像自带的 Java：其版本随镜像变动，keytool 行为也可能不同。
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: 从 tag 推导版本号
+        id: version
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::tag '$tag' 不是 v<major>.<minor>.<patch> 形式（例如 v1.2.3）"
+            exit 1
+          fi
+          IFS='.' read -r major minor patch <<< "$version"
+          # versionCode 必须随版本单调递增，否则 Android 会拒绝覆盖安装。
+          # major*1_000_000 + minor*1_000 + patch 在 minor/patch < 1000 时严格单调。
+          if [ "$minor" -ge 1000 ] || [ "$patch" -ge 1000 ]; then
+            echo "::error::minor 与 patch 必须小于 1000（当前 $minor.$patch）"
+            exit 1
+          fi
+          code=$(( major * 1000000 + minor * 1000 + patch ))
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "version_code=$code" >> "$GITHUB_OUTPUT"
+          echo "版本 $version，versionCode=$code"
+
+      - name: 校验 4 个签名 secret 均已配置
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          missing=""
+          [ -n "${KS_B64:-}" ]    || missing="$missing ANDROID_KEYSTORE_BASE64"
+          [ -n "${KS_PASS:-}" ]   || missing="$missing ANDROID_KEYSTORE_PASSWORD"
+          [ -n "${KEY_ALIAS:-}" ] || missing="$missing ANDROID_KEY_ALIAS"
+          [ -n "${KEY_PASS:-}" ]  || missing="$missing ANDROID_KEY_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::缺少以下 repository secret:$missing"
+            echo "请在 Settings > Secrets and variables > Actions 中配置（需为仓库级；"
+            echo "若设为环境级，job 必须声明 environment: 否则会解析为空字符串）。"
+            exit 1
+          fi
+          echo "4 个签名 secret 均已配置。"
+
+      - name: 校验 keystore 可解码且能打开
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # 去掉可能的空白与换行：用 certutil 生成过的 base64 会带 header 并折行
+          printf '%s' "$KS_B64" | tr -d ' \t\r\n' | base64 -d > "$RUNNER_TEMP/preflight.jks" \
+            || { echo "::error::ANDROID_KEYSTORE_BASE64 不是合法 base64"; exit 1; }
+
+          size=$(stat -c%s "$RUNNER_TEMP/preflight.jks")
+          if [ "$size" -lt 100 ]; then
+            echo "::error::解码后的 keystore 仅 $size 字节，内容疑似不正确"
+            exit 1
+          fi
+
+          # JKS 与 PKCS12 都接受（Android 两者都支持）。keytool 会自动识别。
+          if ! keytool -list -keystore "$RUNNER_TEMP/preflight.jks" \
+                 -storepass "$KS_PASS" > /dev/null 2>&1; then
+            echo "::error::keystore 无法打开：ANDROID_KEYSTORE_PASSWORD 错误，或文件损坏"
+            exit 1
+          fi
+          echo "keystore 校验通过（$size 字节）"
+
+          rm -f "$RUNNER_TEMP/preflight.jks"
+
+      - name: 断言签名材料未被提交入库
+        run: |
+          set -euo pipefail
+          failed=0
+          if git ls-files --error-unmatch app/android/key.properties > /dev/null 2>&1; then
+            echo "::error::app/android/key.properties 已被提交入库。"
+            echo "必须从历史中移除该文件，并**更换 keystore**（口令已泄露）。"
+            failed=1
+          fi
+          if git ls-files | grep -Ei '\.(jks|keystore)$'; then
+            echo "::error::仓库中存在 keystore 文件。必须移除并更换 keystore。"
+            failed=1
+          fi
+          [ "$failed" -eq 0 ] || exit 1
+          echo "签名材料未入库。"
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+
+      # tag 可能打在未经 CI 的提交上，因此发布前必须自己跑一遍测试。
+      # 其中包含跨端判分语料门禁（13872 条向量），这是 A12 的唯一防线 ——
+      # 若语料与实现不一致，这里会失败，从而阻止一个「界面显示答对、落库记为错」
+      # 的版本被发布出去。
+      - name: 后端测试
+        working-directory: backend
+        env:
+          CGO_ENABLED: '0'
+        run: go test ./... -count=1 -timeout 600s
+
+      - name: 前端测试
+        working-directory: app
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+
+  image:
+    name: Docker 镜像
+    runs-on: ubuntu-latest
+    needs: [preflight, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: 登录 ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 仅构建 linux/amd64：目标场景是 x86 服务器；arm64 需要 QEMU，
+      # 构建时间翻倍而收益不明。若日后需要，加一行 platforms 即可。
+      - name: 构建并推送
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.IMAGE }}:${{ needs.preflight.outputs.version }}
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 功能 10 原文要求「镜像文件上传到 release」，故同时产出 tar.gz 附件，
+      # 使离线环境也能 docker load。
+      - name: 导出镜像为 tar.gz
+        run: |
+          set -euo pipefail
+          version="${{ needs.preflight.outputs.version }}"
+          docker pull "${IMAGE}:${version}"
+          docker save "${IMAGE}:${version}" | gzip -9 > "cala-${version}-linux-amd64.tar.gz"
+          ls -lh "cala-${version}-linux-amd64.tar.gz"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: cala-*-linux-amd64.tar.gz
+          retention-days: 7
+
+  apk:
+    name: 已签名 APK
+    runs-on: ubuntu-latest
+    needs: [preflight, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+
+      - name: 解码 keystore 并生成 key.properties
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          # 口令经环境变量传入，**不要**直接把它插值进脚本文本：
+          # 未加引号的 heredoc 会对其内容做参数展开，
+          # 于是口令里若含 $ 或反引号就会被 shell 静默改写，
+          # 表现为「口令明明是对的却签名失败」。
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$KS_B64" | tr -d ' \t\r\n' | base64 -d > "$RUNNER_TEMP/release.jks"
+
+          # heredoc 只展开下面这些我们自己设定的变量；其值不会再被二次展开。
+          cat > app/android/key.properties <<EOF
+          storePassword=${KS_PASS}
+          keyPassword=${KEY_PASS}
+          keyAlias=${KEY_ALIAS}
+          storeFile=$RUNNER_TEMP/release.jks
+          EOF
+
+          # 只确认文件就位，绝不打印内容（含口令）
+          test -s app/android/key.properties && echo "key.properties 已生成"
+          test -s "$RUNNER_TEMP/release.jks" && echo "keystore 已就位"
+
+          # 提前试开一次：口令错误应在这里就以可读信息失败，
+          # 而不是等到 Gradle 抛出难以理解的 keystore 异常。
+          if ! keytool -list -keystore "$RUNNER_TEMP/release.jks" \
+                 -storepass "$KS_PASS" -alias "$KEY_ALIAS" > /dev/null 2>&1; then
+            echo "::error::keystore 无法打开或别名不存在：请检查 ANDROID_KEYSTORE_PASSWORD 与 ANDROID_KEY_ALIAS"
+            exit 1
+          fi
+          echo "keystore 与别名校验通过"
+
+      - name: 构建 release APK
+        working-directory: app
+        run: |
+          set -euo pipefail
+          flutter pub get
+          # 通用 APK（非 --split-per-abi）：侧载场景下「该下载哪个文件」的选错风险
+          # 大于十几 MB 的体积收益（规格 §10.3）。
+          flutter build apk --release \
+            --build-name="${{ needs.preflight.outputs.version }}" \
+            --build-number="${{ needs.preflight.outputs.version_code }}"
+
+      - name: 验签并断言不是 debug 证书
+        run: |
+          set -euo pipefail
+          apk="app/build/app/outputs/flutter-apk/app-release.apk"
+          test -f "$apk" || { echo "::error::未找到 $apk"; exit 1; }
+
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          apksigner="$(find "$sdk_root/build-tools" -name apksigner -type f | sort -V | tail -1)"
+          echo "使用 $apksigner"
+          "$apksigner" verify --print-certs "$apk" | tee "$RUNNER_TEMP/certs.txt"
+
+          # 这是 D18 的最后一道防线：debug 签名的 APK 绝不可发布
+          # （有效期短，且 keystore 更换会导致无法覆盖安装升级）。
+          if grep -qi 'Android Debug' "$RUNNER_TEMP/certs.txt"; then
+            echo "::error::APK 使用了 debug 证书，绝不可发布（设计规格 D18）"
+            exit 1
+          fi
+          "$apksigner" verify "$apk"
+          echo "签名校验通过，且不是 debug 证书。"
+
+      - name: 重命名产物
+        run: |
+          set -euo pipefail
+          version="${{ needs.preflight.outputs.version }}"
+          mkdir -p out
+          cp app/build/app/outputs/flutter-apk/app-release.apk "out/cala-${version}.apk"
+          ls -lh out/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: out/*.apk
+          retention-days: 7
+
+      - name: 清理签名材料
+        if: always()
+        run: rm -f app/android/key.properties "$RUNNER_TEMP/release.jks"
+
+  release:
+    name: 创建 Release
+    runs-on: ubuntu-latest
+    needs: [preflight, image, apk]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: 列出待发布文件
+        run: find dist -type f | sort
+
+      - name: 生成 Release 说明
+        run: |
+          set -euo pipefail
+          version="${{ needs.preflight.outputs.version }}"
+          image="${IMAGE}"
+          cat > notes.md <<EOF
+          ## Cala ${version}
+
+          ### 部署（Docker）
+
+          \`\`\`bash
+          docker pull ${image}:${version}
+          docker run -d --name cala -p 8080:8080 \\
+            -v cala-data:/data \\
+            -e CALA_REGISTRATION_OPEN=true \\
+            ${image}:${version}
+          \`\`\`
+
+          首次启动后打开 http://localhost:8080 注册 —— **第一个注册的用户会成为管理员**。
+          注册完成后建议在「我的」页关闭注册开关。
+
+          离线环境可用附件里的 \`cala-${version}-linux-amd64.tar.gz\`：
+
+          \`\`\`bash
+          docker load < cala-${version}-linux-amd64.tar.gz
+          \`\`\`
+
+          ### Android
+
+          下载 \`cala-${version}.apk\` 侧载安装，已用正式密钥签名。
+
+          ### 说明
+
+          - 镜像仅 linux/amd64
+          - APK 为通用包（含全部 ABI），未按 ABI 拆分
+          EOF
+          cat notes.md
+
+      - name: 创建 Release 并上传附件
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="${{ needs.preflight.outputs.version }}"
+          gh release create "v${version}" \
+            --title "Cala ${version}" \
+            --notes-file notes.md \
+            dist/cala-*.tar.gz dist/cala-*.apk
