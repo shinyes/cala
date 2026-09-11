@@ -359,10 +359,107 @@ jobs:
         if: always()
         run: rm -f app/android/key.properties "$RUNNER_TEMP/release.jks"
 
+  # 容器冒烟测试：在**真实 Docker** 中按 docker-compose.yml 的同一配置启动镜像，
+  # 验证它能写入数据目录并正常工作。
+  #
+  # 为什么需要这个 job（它本可以拦下一个真实缺陷）：
+  # v0.0.1 的镜像里**不存在 /data**，而容器以 nonroot(uid 65532) 运行。
+  # Docker 挂载命名卷时会新建该目录并归属 root:root，于是 nonroot 无法创建 cala.db，
+  # 服务启动即失败（数据库初始化失败: unable to open database file），容器 crash-loop。
+  # 这个缺陷在「构建成功 + 镜像已推送」的情况下完全不可见 ——
+  # 只有真正把容器跑起来并写一次数据才会暴露。
+  #
+  # 本 job 的注册步骤是关键的：注册会写 user 表，因此它同时证明了
+  # ①容器能启动 ②nonroot 能写入 /data ③数据库可用。
+  smoke:
+    name: 容器冒烟测试
+    runs-on: ubuntu-latest
+    needs: [preflight, image]
+    steps:
+      - name: 拉取刚发布的镜像
+        run: docker pull "${IMAGE}:${{ needs.preflight.outputs.version }}"
+
+      - name: 以命名卷启动（与 docker-compose.yml 相同的配置）
+        run: |
+          set -euo pipefail
+          docker volume create cala-smoke-data
+          docker run -d --name cala-smoke \
+            -p 18080:8080 \
+            -v cala-smoke-data:/data \
+            -e CALA_DB=/data/cala.db \
+            -e CALA_ADDR=:8080 \
+            -e CALA_REGISTRATION_OPEN=true \
+            "${IMAGE}:${{ needs.preflight.outputs.version }}"
+
+      - name: 等待健康检查通过
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18080/api/healthz > /dev/null 2>&1; then
+              echo "健康检查通过（第 ${i} 次尝试）"
+              curl -s http://127.0.0.1:18080/api/healthz; echo
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::容器在 30 秒内未通过健康检查 —— 很可能无法写入 /data"
+          echo "--- 容器日志 ---"
+          docker logs cala-smoke || true
+          echo "--- 容器状态 ---"
+          docker inspect -f 'status={{.State.Status}} exit={{.State.ExitCode}} restarts={{.RestartCount}}' cala-smoke || true
+          exit 1
+
+      - name: 断言容器未在 crash-loop
+        run: |
+          set -euo pipefail
+          state=$(docker inspect -f '{{.State.Status}}' cala-smoke)
+          restarts=$(docker inspect -f '{{.RestartCount}}' cala-smoke)
+          echo "状态=$state 重启次数=$restarts"
+          if [ "$state" != "running" ] || [ "$restarts" != "0" ]; then
+            echo "::error::容器状态异常（非 running 或发生重启）"
+            docker logs cala-smoke || true
+            exit 1
+          fi
+
+      - name: 验证 nonroot 能写入数据目录（注册首个用户）
+        run: |
+          set -euo pipefail
+          # 注册会写 user 表，因此这一步是「数据目录可写」的直接证据
+          resp=$(curl -fsS -X POST http://127.0.0.1:18080/api/auth/register \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"smokeadmin","password":"password123"}')
+          echo "$resp"
+          case "$resp" in
+            *'"becameAdmin":true'*) echo "首个用户已成为管理员 ✓" ;;
+            *) echo "::error::首个用户应成为管理员"; exit 1 ;;
+          esac
+
+      - name: 重启容器，验证数据确实持久化在卷中
+        run: |
+          set -euo pipefail
+          docker restart cala-smoke > /dev/null
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:18080/api/healthz > /dev/null 2>&1 && break
+            sleep 1
+          done
+          # 重启后仍能用刚才的账号登录 -> 数据确实写进了命名卷（而非容器可写层）
+          curl -fsS -X POST http://127.0.0.1:18080/api/auth/login \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"smokeadmin","password":"password123"}' \
+            | grep -q '"token"' || { echo "::error::重启后无法登录，数据未持久化"; docker logs cala-smoke; exit 1; }
+          echo "数据已持久化到命名卷 ✓"
+
+      - name: 清理
+        if: always()
+        run: |
+          docker logs cala-smoke > /dev/null 2>&1 || true
+          docker rm -f cala-smoke > /dev/null 2>&1 || true
+          docker volume rm cala-smoke-data > /dev/null 2>&1 || true
+
   release:
     name: 创建 Release
     runs-on: ubuntu-latest
-    needs: [preflight, image, apk]
+    needs: [preflight, image, apk, smoke]
     steps:
       - uses: actions/checkout@v6
         with:

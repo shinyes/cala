@@ -1,20 +1,88 @@
+# Cala 后端部署配置（使用已发布的镜像）
+#
+#   docker compose up -d
+#
+# 前置：只需 Docker。ghcr 包已设为公开，**无需 docker login**。
+#
+# 自建镜像请用 docker-compose.build.yml。
+#
+# 首次使用：启动后打开 http://<主机>:8080 注册 ——
+# **第一个注册的用户会成为管理员**，随后建议在「我的」页关闭注册开关。
+
 services:
   cala:
-    build:
-      context: ./backend
-    image: ghcr.io/shinyes/cala:local
-    ports:
-      - "8080:8080"
-    environment:
-      CALA_DB: /data/cala.db
-      CALA_ADDR: ":8080"
-      # 生产环境请显式设置为 false，并先注册管理员账号。
-      # 注意：即使为 false，系统尚无用户时首个注册者仍会成为管理员（规格 §6.2），
-      # 否则全新部署会自我锁死。
-      CALA_REGISTRATION_OPEN: "true"
-    volumes:
-      - cala-data:/data
+    # 固定版本，不用 :latest。
+    #
+    # 理由：Cala 用迁移表按序升级 schema。若跟随 :latest，
+    # 某次 `docker compose pull` 可能在无预期的情况下应用一次迁移；
+    # 迁移虽在事务内执行，但降级需要回退镜像且旧版未必认识新 schema。
+    # 固定版本让升级成为一个显式动作：改这一行 -> pull -> up -d。
+    image: ghcr.io/shinyes/cala:0.0.2
+    container_name: cala
     restart: unless-stopped
 
+    ports:
+      # 左边是宿主机端口，可按需改（例如 "9000:8080"）。
+      # 若前面有反向代理，可改为 "127.0.0.1:8080:8080" 只监听本机。
+      - "8080:8080"
+
+    environment:
+      # ---- 以下两项与镜像默认值相同，列出来是为了让部署配置自解释 ----
+      CALA_ADDR: ":8080"
+      CALA_DB: /data/cala.db
+
+      # 会话有效期。默认 720h（30 天）。过期后需重新登录。
+      CALA_SESSION_TTL: 720h
+
+      # 注册开关的**初值**，仅在数据库中尚无该设置时生效。
+      # 注意：即使设为 false，系统尚无用户时首个注册者仍会成为管理员
+      #（否则全新部署会自我锁死）。注册完管理员后建议改为 "false"。
+      CALA_REGISTRATION_OPEN: "true"
+
+      # 开发期浏览器调试的 CORS 白名单。部署时**留空即完全关闭 CORS**。
+      # 原因：后端不提供网页前端（前端以 APK 交付），
+      # Android 原生 HTTP 客户端不受 CORS 约束，因此生产环境无需放行任何来源。
+      CALA_DEV_CORS_ORIGINS: ""
+
+    volumes:
+      # 数据库（含 WAL/SHM 文件）都在这里。**这是唯一需要备份的数据。**
+      - cala-data:/data
+
+    # 容器内已是 nonroot(uid 65532)，此选项进一步禁止提权。
+    security_opt:
+      - no-new-privileges:true
+
+    # 刻意**不配置** healthcheck：镜像基于 distroless，
+    # 容器内没有 shell、curl 或 wget，无法编写探活命令。
+    # 可用性由 restart: unless-stopped 与宿主机的端口探测保障。
+    # 若需要 Docker 级别的健康检查，需要给服务端加一个自检子命令（可作为后续增强）。
+
 volumes:
+  # 命名卷由 Docker 管理，位于 /var/lib/docker/volumes/<项目名>_cala-data/_data
   cala-data:
+
+# ---------------------------------------------------------------------------
+# 常用操作
+#
+# 查看日志：
+#   docker compose logs -f cala
+#
+# 升级（先改上面 image 的版本号）：
+#   docker compose pull && docker compose up -d
+#
+# 备份数据库（SQLite 热备，需先停容器或用 .backup，此处取简单可靠的做法）：
+#   docker compose stop cala
+#   docker run --rm -v cala-data:/data -v "$PWD:/backup" alpine \
+#     tar czf /backup/cala-backup-$(date +%F).tar.gz -C /data .
+#   docker compose start cala
+#
+# 恢复：
+#   docker compose stop cala
+#   docker run --rm -v cala-data:/data -v "$PWD:/backup" alpine \
+#     sh -c "rm -f /data/* && tar xzf /backup/cala-backup-YYYY-MM-DD.tar.gz -C /data"
+#   docker compose start cala
+#
+# 至此数据目录的属主说明：镜像中 /data 已归属 nonroot(uid 65532)，
+# Docker 初始化命名卷时会沿用该属主，因此服务可正常写入。
+# （若挂载的是宿主机**绑定挂载**而非命名卷，需自行确保目录可被 uid 65532 写入。）
+# ---------------------------------------------------------------------------

@@ -81,10 +81,39 @@ cd backend && go test ./...
 cd app && flutter analyze && flutter test
 ```
 
+## 部署后端
+
+前置：只需 Docker。镜像已发布在 `ghcr.io/shinyes/cala`（**公开包，无需登录**）。
+
+```bash
+docker compose up -d
+```
+
+首次启动后打开 `http://<主机>:8080` 注册 ——
+**第一个注册的用户会成为管理员**，随后建议在「我的」页关闭注册开关。
+
+配置见 [`docker-compose.yml`](docker-compose.yml)（含环境变量说明、备份与恢复命令）。
+从源码自建镜像用 [`docker-compose.build.yml`](docker-compose.build.yml)。
+
+要点：
+
+- **数据库在命名卷 `cala-data` 里，这是唯一需要备份的数据。**
+- 升级请改 compose 中 `image` 的版本号后 `docker compose pull && docker compose up -d`；
+  不建议跟随 `:latest`（会不经预期地应用 schema 迁移）。
+- 生产环境应把 `CALA_DEV_CORS_ORIGINS` 留空以完全关闭 CORS：
+  后端不提供网页前端，Android 原生客户端不受 CORS 约束。
+
 ## 发布
 
-推送 `v*` 形式的 tag 会触发 CI：构建 Docker 镜像推送至 `ghcr.io/shinyes/cala`，
-并创建 GitHub Release，附带镜像 `.tar.gz` 与已签名 APK。
+推送 `v*` 形式的 tag 会触发发布流水线：
+
+1. **Preflight** —— 校验版本号、签名 secret、keystore 可用性与密码材料未入库
+2. **Test** —— 后端测试（含跨端判分语料门禁）+ 前端 analyze/test
+3. **Docker 镜像** —— 构建并推送至 `ghcr.io/shinyes/cala`，同时导出 `.tar.gz`
+4. **已签名 APK** —— 用正式 keystore 签名，并断言证书不是 debug 证书
+5. **容器冒烟测试** —— 在真实 Docker 中按 compose 的同一配置启动容器、注册一个用户、
+   重启后确认数据持久化（这一步会拦下「镜像能构建但跑不起来」类问题）
+6. **创建 Release** —— 汇总上述产物作为附件
 
 ## 权威文档
 

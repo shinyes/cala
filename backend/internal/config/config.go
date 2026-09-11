@@ -37,8 +37,21 @@ func Load() (Config, error) {
 	}
 	c.SessionTTL = ttl
 
-	// 空字符串 -> 空列表（即完全不启用 CORS 放行）
-	for _, o := range strings.Split(env("CALA_DEV_CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"), ",") {
+	// CORS 白名单。
+	//
+	// 这里刻意**不用** env()，而要区分「未设置」与「显式设为空」：
+	//   未设置        -> 使用开发期默认来源
+	//   显式设为 ""   -> 空列表，完全不启用 CORS 放行（生产环境应如此）
+	//
+	// 原因：env() 内部有 `v != ""` 判断，空字符串会静默回退到默认值，
+	// 与本段声明的意图相反 —— 即 `CALA_DEV_CORS_ORIGINS=""` 会变成
+	// 「放行 localhost:3000」，而非「不放行任何来源」。
+	// 生产部署依赖后者，故用 LookupEnv 实现该语义。
+	corsRaw, corsSet := os.LookupEnv("CALA_DEV_CORS_ORIGINS")
+	if !corsSet {
+		corsRaw = "http://localhost:3000,http://127.0.0.1:3000"
+	}
+	for _, o := range strings.Split(corsRaw, ",") {
 		if o = strings.TrimSpace(o); o != "" {
 			c.DevCORSOrigins = append(c.DevCORSOrigins, o)
 		}
