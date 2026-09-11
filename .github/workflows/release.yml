@@ -22,11 +22,11 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       version_code: ${{ steps.version.outputs.version_code }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # preflight 会用 keytool 试开 keystore，因此这里显式准备 JDK。
       # 不依赖 runner 镜像自带的 Java：其版本随镜像变动，keytool 行为也可能不同。
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -74,10 +74,11 @@ jobs:
           fi
           echo "4 个签名 secret 均已配置。"
 
-      - name: 校验 keystore 可解码且能打开
+      - name: 校验 keystore 可解码、能打开，且别名存在
         env:
           KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           set -euo pipefail
           # 去掉可能的空白与换行：用 certutil 生成过的 base64 会带 header 并折行
@@ -90,13 +91,40 @@ jobs:
             exit 1
           fi
 
-          # JKS 与 PKCS12 都接受（Android 两者都支持）。keytool 会自动识别。
-          if ! keytool -list -keystore "$RUNNER_TEMP/preflight.jks" \
-                 -storepass "$KS_PASS" > /dev/null 2>&1; then
+          if ! keytool -list -keystore "$RUNNER_TEMP/preflight.jks" -storepass "$KS_PASS" > /dev/null 2>&1; then
             echo "::error::keystore 无法打开：ANDROID_KEYSTORE_PASSWORD 错误，或文件损坏"
             exit 1
           fi
-          echo "keystore 校验通过（$size 字节）"
+          echo "keystore 可打开（$size 字节）"
+
+          # 打印其中的私钥条目别名。
+          # 别名不是机密（真正的机密是 keystore 文件与口令，签名需要两者兼备），
+          # 把它显示出来，secret 填错时就能一眼看到正确值，不必再来一轮。
+          echo "keystore 中的私钥条目别名："
+          keytool -list -keystore "$RUNNER_TEMP/preflight.jks" -storepass "$KS_PASS" 2>/dev/null \
+            | grep -i 'PrivateKeyEntry' | sed 's/,.*//' | sed 's/^/  /' \
+            || echo "  （没有找到私钥条目——该 keystore 无法用于签名）"
+
+          # 别名修剪首尾空白后再比对。
+          # 别名从不合法地包含首尾空白，而从网页粘贴到 secret 输入框时
+          # 很容易带上换行或空格 —— 这会让 keytool 找不到条目，
+          # 报出与「别名真的不存在」相同的错误。
+          alias_trimmed="$(printf '%s' "$KEY_ALIAS" | tr -d ' \t\r\n')"
+          if [ -z "$alias_trimmed" ]; then
+            echo "::error::ANDROID_KEY_ALIAS 为空。请把上面列出的别名填入该 secret。"
+            exit 1
+          fi
+          if [ "$alias_trimmed" != "$KEY_ALIAS" ]; then
+            echo "::warning::ANDROID_KEY_ALIAS 含首尾空白，已自动修剪（建议清理该 secret）"
+          fi
+
+          if ! keytool -list -keystore "$RUNNER_TEMP/preflight.jks" -storepass "$KS_PASS" \
+                 -alias "$alias_trimmed" > /dev/null 2>&1; then
+            echo "::error::ANDROID_KEY_ALIAS='$alias_trimmed' 在 keystore 中不存在。"
+            echo "请把上面列出的别名之一填入该 secret（注意不要带多余空白）。"
+            exit 1
+          fi
+          echo "别名 '$alias_trimmed' 校验通过"
 
           rm -f "$RUNNER_TEMP/preflight.jks"
 
@@ -120,7 +148,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-go@v5
         with:
@@ -155,7 +183,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [preflight, test]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: docker/setup-buildx-action@v3
 
@@ -202,9 +230,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [preflight, test]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -229,11 +257,15 @@ jobs:
           set -euo pipefail
           printf '%s' "$KS_B64" | tr -d ' \t\r\n' | base64 -d > "$RUNNER_TEMP/release.jks"
 
+          # 别名修剪首尾空白（别名从不合法地包含首尾空白，而粘贴很容易带上）。
+          # preflight 已校验过该别名存在于 keystore 中。
+          alias_trimmed="$(printf '%s' "$KEY_ALIAS" | tr -d ' \t\r\n')"
+
           # heredoc 只展开下面这些我们自己设定的变量；其值不会再被二次展开。
           cat > app/android/key.properties <<EOF
           storePassword=${KS_PASS}
           keyPassword=${KEY_PASS}
-          keyAlias=${KEY_ALIAS}
+          keyAlias=${alias_trimmed}
           storeFile=$RUNNER_TEMP/release.jks
           EOF
 
@@ -241,14 +273,19 @@ jobs:
           test -s app/android/key.properties && echo "key.properties 已生成"
           test -s "$RUNNER_TEMP/release.jks" && echo "keystore 已就位"
 
-          # 提前试开一次：口令错误应在这里就以可读信息失败，
-          # 而不是等到 Gradle 抛出难以理解的 keystore 异常。
+          # 这里是 preflight 之后的第二道防线：若别名或口令在此处失效
+          # （例如 preflight 与 apk job 之间 secret 被改动），
+          # 给出可读信息而不是让 Gradle 抛出难以理解的 keystore 异常。
           if ! keytool -list -keystore "$RUNNER_TEMP/release.jks" \
-                 -storepass "$KS_PASS" -alias "$KEY_ALIAS" > /dev/null 2>&1; then
-            echo "::error::keystore 无法打开或别名不存在：请检查 ANDROID_KEYSTORE_PASSWORD 与 ANDROID_KEY_ALIAS"
+                 -storepass "$KS_PASS" -alias "$alias_trimmed" > /dev/null 2>&1; then
+            echo "::error::keystore 无法打开或别名 '$alias_trimmed' 不存在。"
+            echo "keystore 中的私钥条目别名："
+            keytool -list -keystore "$RUNNER_TEMP/release.jks" -storepass "$KS_PASS" 2>/dev/null \
+              | grep -i 'PrivateKeyEntry' | sed 's/,.*//' | sed 's/^/  /' \
+              || echo "  （未找到私钥条目）"
             exit 1
           fi
-          echo "keystore 与别名校验通过"
+          echo "keystore 与别名 '$alias_trimmed' 校验通过"
 
       - name: 构建 release APK
         working-directory: app
@@ -304,7 +341,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [preflight, image, apk]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
