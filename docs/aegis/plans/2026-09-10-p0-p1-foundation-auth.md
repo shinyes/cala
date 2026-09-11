@@ -2758,8 +2758,17 @@ pub cache 在 **C:**、项目在 **D:**。Kotlin 增量编译器在 flush 缓存
 `Path.relativize()`，而 Windows 下**跨盘符无法相对化**，于是抛
 `IllegalArgumentException`，最终被包装成「无法关闭增量缓存」。
 
-**根因修复**：让两者同盘。本机已设置用户级环境变量
+**根因修复（初版，后被取代）**：让两者同盘。当时在本机设置了用户级环境变量
 `PUB_CACHE=D:\Programs\Pub\Cache`（Flutter SDK、Android SDK 均已在 D:）。
+
+> ⚠️ **该方案在 P7 被证明不可靠，已取代。**
+> **环境变量只对「设置之后启动的进程」生效。** 当时验证的是「设置了变量后能成功」，
+> 而没有验证「不设置变量时是否也能成功」—— 前者掩盖了后者的脆弱性。
+> 在 P7 构建 release APK 时（由早已运行的父进程派生的 shell，看不到该变量）
+> 同一错误回归，于是改为在 `app/android/gradle.properties` 设
+> `kotlin.incremental=false`，从根上避开该代码路径。
+> 代价：本地重复构建失去 Kotlin 增量编译（数十秒）；**CI 零成本**（每次都是冷构建）。
+> 详见 `evidence/p7/ACCEPTANCE.md` §3.1。
 
 **已排除的假设**（各做过一次单变量实验）：
 1. Gradle/Kotlin 守护进程持有文件句柄 —— 杀掉全部守护进程并 `flutter clean` 后仍复现。
