@@ -113,3 +113,11 @@ No evidence has been recorded yet.
 - Source: 已发布 APK 的 aapt2 解包取证 + 本地 release APK 解包复核 + 两个真实后端的端到端验证 + 42 项新测试(含变异验证)
 - Summary: 新增手机端可配置服务端地址(ADR-0006)。实现中发现阻塞缺陷: release APK 缺少 INTERNET 权限(Flutter 只在 debug/profile 清单声明)且 targetSdk=36 禁止明文 HTTP, 即已发布版本无法发起任何网络请求。aapt2 取证确认。已修 main 清单 + networkSecurityConfig 放行明文, 并在新构建的 release APK 中复核生效。功能要点: 地址规范化(无 scheme/末尾斜杠/中间空白/裸 IPv6)、就地改 ApiClient.baseUrl 不重建(保 token)、单点写入且换服务器必清登录态、main() 启动前加载消除竞态、dataScopeProvider 使数据声明式作废、设置页含测试连接, 入口在登录页与我的 Tab。顺带修复 _restore 覆盖新登录态与异步写已销毁 notifier 两个真实缺陷。前端 159 项测试通过(原 117)
 - Verifier: flutter analyze/test + aapt2 + 真实 HTTP 双后端端到端
+
+## EvidenceBundleDraft
+
+- Artifact key: p7-keypad-and-text-answer
+- Type: test
+- Source: 真实后端端到端取证(保存成功+kind=text) + 修复后的真实 HTTP 复验 + 新增 3 项测试
+- Summary: 键盘字母表按用户要求由 0-9 . - / 收敛为 0-9 . -(3列5行布局), 去掉分数键保留负号。去掉 / 安全: 判分是有理数交叉相乘, 3/4 与 0.75 相等, 有限小数即可覆盖; 唯一例外是无限循环小数(如 1/3)须配容差, 该后果已写入 keypad.dart 与规格。核实过程中发现真实缺陷: 文本答案的规则能保存成功且服务端正常下发 kind=text, 但键盘打不出中文(练习页不唤起系统键盘), 该题永远答不对 —— 根因是规格 §5.5.2(允许文本)与功能6(自带键盘)从未对账。经用户确认收窄: service 层保存期与开轮时均拒绝文本答案并给出可读理由; 拒绝逻辑收敛为单一 helper。兼容边界: scoring.Classify 仍接受文本(历史信封与错题重练靠它判分), 由 TestScoringStillClassifiesTextAnswer 锁定。真实 HTTP 复验: 文本->400 且消息含题号与改法; 数值与分数->201 无误伤
+- Verifier: 真实 HTTP API (127.0.0.1:8090) + 后端 9 包测试 + 前端 159 项

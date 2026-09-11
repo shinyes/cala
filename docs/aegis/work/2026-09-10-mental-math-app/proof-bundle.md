@@ -27,6 +27,7 @@ This proof bundle is an advisory Aegis Method Pack record. It does not determine
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p6-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-deploy-defects.json
+- docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-keypad-and-text-answer.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-release-published.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-server-address.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-spec-approved.json
@@ -34,7 +35,7 @@ This proof bundle is an advisory Aegis Method Pack record. It does not determine
 
 ## Drift Check
 
-- Scope status: status: 规格 §16 的 P0-P7 全部交付并验证; 无范围外扩张
-- Compatibility status: status: 八条架构不可协商项全部由测试守护; 签名材料未入库; ci.yml 的语料门禁未削弱
-- Retirement status: status: 退役项 = 模板默认 debug 签名(已替换为正式签名)。variants/变异测试代码已全部还原
+- Scope status: status: 键盘字母表为用户明确要求的收窄; 答案域收窄为 ADR-0007。无范围外扩张
+- Compatibility status: status: scoring.Classify 保持接受文本(历史判分不受影响); 清洗表与判分仍接受 /; 分数答案仍合法。拒绝仅发生在 service 层产品校验
+- Retirement status: status: 退役项 = 键盘的 / 键与文本答案这一作者能力。均有记录与理由; 无遗留回退路径
 - Advisory decision: continue

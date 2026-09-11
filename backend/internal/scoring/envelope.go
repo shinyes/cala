@@ -45,6 +45,12 @@ const numericAlphabet = "0123456789+-./"
 //  2. 含数值字母表以外字符的非空文本 -> text（允许中文）
 //  3. 仅由数值字母表组成但无法解析，或分母为零 -> 报错（这是笔误，不是文本答案）
 //  4. 含控制字符或超长 -> 报错
+//
+// **本函数必须继续接受文本答案**，即使产品层已不允许**新建**文本答案题：
+// 已落库的历史信封（kind=text）仍要靠它判分。
+// 拒绝新文本答案的职责在 service 层（见 service.classifyAnswerable），
+// 不要把它下沉到这里 —— 那会让历史数据与错题重练无法判定。
+// 该边界由 service 包的 TestScoringStillClassifiesTextAnswer 锁定。
 func Classify(raw string) (Envelope, error) {
 	if strings.TrimSpace(raw) == "" {
 		return Envelope{}, fmt.Errorf("答案不能为空")

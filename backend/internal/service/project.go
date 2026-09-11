@@ -110,12 +110,39 @@ func validateAnswerEnvelopes(rule *rules.Rule, cfg map[string]any) error {
 		return err
 	}
 	for _, q := range qs {
-		if _, err := scoring.Classify(q.A); err != nil {
-			return fmt.Errorf("%w: 第 %d 题的答案 %q 无法分类：%v",
-				ErrInvalidProject, q.Index+1, q.A, err)
+		if _, err := classifyAnswerable(q.A); err != nil {
+			return fmt.Errorf("%w: 第 %d 题：%v",
+				ErrInvalidProject, q.Index+1, err)
 		}
 	}
 	return nil
+}
+
+// classifyAnswerable 分类答案，并拒绝**客户端无法作答**的形态。
+//
+// 背景（实测取证，见 evidence/p7 §6.7）：文本答案在服务端是可分类、可判分的，
+// 但**客户端没有任何输入途径** —— 练习页只提供自带数字键盘
+// （`0-9` `.` `-` 与 `⌫`，规格 §9.3），且刻意不唤起系统键盘（功能6）。
+// 因此 `a: "质数"` 这类规则能保存成功，却让用户**永远答不对**。
+//
+// 这是产品层约束，不是判分语义：因此放在 service 层，
+// 而 **scoring.Classify 必须继续接受文本** ——
+// 已落库的历史信封（kind=text）仍要靠它判分，收窄它会让历史数据无法判定。
+//
+// 两处调用（保存期校验与开轮）共用本函数，避免同一规则出现两份实现而漂移。
+func classifyAnswerable(a string) (scoring.Envelope, error) {
+	env, err := scoring.Classify(a)
+	if err != nil {
+		// 保留「无法分类」这一措辞：作者需要一眼看出问题出在**答案形态**上，
+		// 而不是题面或规则语法。既有测试正是断言这一点，不应为了改消息而放宽它。
+		return scoring.Envelope{}, fmt.Errorf("答案 %q 无法分类：%v", a, err)
+	}
+	if env.Kind == scoring.KindText {
+		return scoring.Envelope{}, fmt.Errorf(
+			"答案是文本 %q，无法作答：练习页只有数字键盘（可输入 0-9、小数点与负号），"+
+				"且不唤起系统键盘。请让 generate 返回数值答案", a)
+	}
+	return env, nil
 }
 
 // validateTolerance 强制「两列同时为空或同时非空且 den > 0」。

@@ -345,3 +345,12 @@
 - §6.5
 - Blocked on: 无
 - Next step: 真机安装并验证联网 + 配置服务器地址 + 覆盖安装
+
+## DriftCheckDraft
+
+- Scope status: status: 键盘字母表为用户明确要求的收窄; 答案域收窄为 ADR-0007。无范围外扩张
+- Compatibility status: status: scoring.Classify 保持接受文本(历史判分不受影响); 清洗表与判分仍接受 /; 分数答案仍合法。拒绝仅发生在 service 层产品校验
+- Retirement status: status: 退役项 = 键盘的 / 键与文本答案这一作者能力。均有记录与理由; 无遗留回退路径
+- New risk signals:
+- 无限循环小数形式的答案须配容差, 已写入规格与 keypad.dart 提示; 作者仍可能忽略
+- Advisory decision: continue

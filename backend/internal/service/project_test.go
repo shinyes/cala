@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/shinyes/cala/backend/internal/rules"
+	"github.com/shinyes/cala/backend/internal/scoring"
 	"github.com/shinyes/cala/backend/internal/store"
 )
 
@@ -89,6 +90,88 @@ func TestCreateProjectRejectsBadRule(t *testing.T) {
 				t.Fatalf("应返回 *rules.ValidationError 以便映射为 rule_invalid, 得到 %T: %v", err, err)
 			}
 		})
+	}
+}
+
+// TestCreateProjectRejectsTextAnswer 覆盖「文本答案无法作答」这一实测缺陷。
+//
+// 取证（真实后端，见 evidence/p7 §6.7）：`a:"质数"` 的规则**保存成功**、
+// 服务端也正常下发 `kind=text` 的题目，但练习页只有数字键盘
+// （`0-9` `.` `-` 与 `⌫`，规格 §9.3）且不唤起系统键盘 —— 该题永远答不对。
+//
+// 因此保存期必须拒绝，并给出可行动的说明；否则作者会做出一个坏项目
+// 而毫无察觉（这正是该缺陷此前长期存在的原因）。
+func TestCreateProjectRejectsTextAnswer(t *testing.T) {
+	svc, st := newProjectSvc(t)
+	owner := makeUser(t, st, "owner")
+
+	cases := map[string]string{
+		"中文文本":  `function generate(cfg){ return {q:"7 是质数吗", a:"质数"} }`,
+		"英文文本":  `function generate(cfg){ return {q:"?", a:"prime"} }`,
+		"数值加单位": `function generate(cfg){ return {q:"?", a:"3 个"} }`,
+	}
+	for name, src := range cases {
+		t.Run(name, func(t *testing.T) {
+			in := validInput()
+			in.RuleSource = src
+			_, err := svc.Create(owner, in)
+			if err == nil {
+				t.Fatal("文本答案应被拒绝：客户端没有输入途径，用户永远答不对")
+			}
+			if !errors.Is(err, ErrInvalidProject) {
+				t.Errorf("应返回 ErrInvalidProject, 得到 %v", err)
+			}
+			msg := err.Error()
+			// 必须指出题号，否则作者无从定位
+			if !strings.Contains(msg, "题") {
+				t.Errorf("应指出是第几题, 得到: %v", msg)
+			}
+			// 必须说明原因（键盘打不出来），否则作者只会困惑于「为什么不能文本」
+			if !strings.Contains(msg, "无法作答") {
+				t.Errorf("应说明该答案无法作答, 得到: %v", msg)
+			}
+			// 必须给出行动指引
+			if !strings.Contains(msg, "数值") {
+				t.Errorf("应提示改为数值答案, 得到: %v", msg)
+			}
+		})
+	}
+}
+
+// TestScoringStillClassifiesTextAnswer 锁定兼容边界：
+// **scoring.Classify 必须继续接受文本答案**。
+//
+// 产品层拒绝了新的文本答案，但已落库的历史信封（kind=text）仍要靠
+// Classify 判分；若哪天有人「顺手」把拒绝逻辑下沉到 scoring，
+// 历史数据与错题重练会立刻无法判定。本测试防止这种下沉。
+func TestScoringStillClassifiesTextAnswer(t *testing.T) {
+	env, err := scoring.Classify("质数")
+	if err != nil {
+		t.Fatalf("scoring 必须继续能分类文本答案（历史数据依赖它判分）: %v", err)
+	}
+	if env.Kind != scoring.KindText || env.Value != "质数" {
+		t.Errorf("信封 = %+v, 期望 kind=text value=质数", env)
+	}
+
+	// 数值答案不受影响
+	num, err := scoring.Classify("3/4")
+	if err != nil || num.Kind != scoring.KindRational {
+		t.Errorf("数值答案应仍可分类, 得到 %+v err=%v", num, err)
+	}
+}
+
+// TestClassifyAnswerableAllowsNumeric 确认新增约束没有误伤数值答案。
+func TestClassifyAnswerableAllowsNumeric(t *testing.T) {
+	for _, a := range []string{"42", "-7", "0.75", "3/4", "-0.5", "  12  "} {
+		if _, err := classifyAnswerable(a); err != nil {
+			t.Errorf("数值答案 %q 不应被拒绝: %v", a, err)
+		}
+	}
+	// 文本必须被拒
+	for _, a := range []string{"质数", "prime", "3 个"} {
+		if _, err := classifyAnswerable(a); err == nil {
+			t.Errorf("文本答案 %q 应被拒绝", a)
+		}
 	}
 }
 

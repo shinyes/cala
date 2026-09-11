@@ -94,12 +94,14 @@ func (s *RoundService) Start(userID, projectID int64) (StartedRound, error) {
 
 	out := make([]Question, 0, len(qs))
 	for _, q := range qs {
-		env, err := scoring.Classify(q.A)
+		env, err := classifyAnswerable(q.A)
 		if err != nil {
-			// 保存期已校验过答案可分类；此处失败说明规则在保存后被改动过，
-			// 或保存期校验有漏洞。明确报错而不是下发一个无法判分的题目。
-			return StartedRound{}, fmt.Errorf("%w: 第 %d 题的答案 %q 无法分类：%v",
-				ErrInvalidProject, q.Index+1, q.A, err)
+			// 保存期已校验过答案可作答；此处失败说明规则在保存后被改动过，
+			// 或项目是在该约束生效**之前**保存的历史数据。
+			// 明确报错而不是下发一个无法作答的题目 —— 后者会让用户
+			// 白做一整轮并把全错的记录写进统计。
+			return StartedRound{}, fmt.Errorf("%w: 第 %d 题：%v",
+				ErrInvalidProject, q.Index+1, err)
 		}
 		out = append(out, Question{Index: q.Index, Q: q.Q, A: q.A, Envelope: env})
 	}
