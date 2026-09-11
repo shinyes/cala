@@ -24,12 +24,13 @@ This proof bundle is an advisory Aegis Method Pack record. It does not determine
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p3-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p4-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p5-acceptance.json
+- docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p6-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-spec-approved.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-sqlite-cascade-spike.json
 
 ## Drift Check
 
-- Scope status: status: 完成规格§16 的 P5; 未越界到 P6
-- Compatibility status: status: 无新增聚合表(统计为派生态); 未改动 round 写入语义; 统计 Tab 只读; 隐私按 (user,project) 过滤且无跨用户查询路径; 零新增依赖
-- Retirement status: status: 无退役对象; 明确拒绝图表库/物化表/时间范围选择器/跨项目汇总; 变异测试代码已还原
+- Scope status: status: 完成规格§16 的 P6; 未越界到 P7
+- Compatibility status: status: (project,user) 单一级联不变量保持(退订与删项目共用同一条外键规则); 订阅不授予写权限已验证; 未提供可单独调用的删订阅行原语
+- Retirement status: status: 无退役对象; P4 的两处『尚未提供』提示已随真实功能移除; 明确拒绝短链接/二维码/订阅通知/跨实例订阅; 变异测试代码已还原
 - Advisory decision: continue

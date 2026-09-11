@@ -73,3 +73,11 @@ No evidence has been recorded yet.
 - Source: go test ./... (9 包) + flutter analyze/test (107 项) + 端到端三种粒度 + 中位数变异测试
 - Summary: A8 通过。新增 internal/stats 36 测试、统计端点 20 测试、折线图 13 测试。端到端手工核对: 三轮 4000/8000/12000ms -> min4000 max12000 avg8000 median8000; 正确率 1.0/0.5/0.0 -> avg0.5 median0.5。隐私边界与派生态均有测试守护。变异测试: 中位数偶数分支改为取下中位数后偶数用例全失败而奇数用例仍通过
 - Verifier: evidence/p5/ACCEPTANCE.md
+
+## EvidenceBundleDraft
+
+- Artifact key: p6-acceptance
+- Type: test-report
+- Source: go test ./... (9 包) + flutter analyze/test (117 项) + 端到端功能5闭环 + 退订变异测试
+- Summary: A5/A6 通过。端到端走完分享->订阅->跟随->退订并查库确认: bob 导入 3 条(1 有效/1 令牌无效/1 跨实例)成功 1/3 且逐条有可读原因; bob 统计 3 轮而 alice 2 轮(隐私独立); alice 改项目后 bob 立即看到; bob 退订 deletedRounds=3 后再练习 403 且 alice 记录完好。变异测试: 退订只删订阅行不清轮次时 A6 测试立即失败
+- Verifier: evidence/p6/ACCEPTANCE.md

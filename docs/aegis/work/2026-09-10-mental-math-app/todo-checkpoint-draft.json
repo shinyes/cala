@@ -1,19 +1,19 @@
 {
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
-  "currentTodo": "P6 分享订阅与退订",
+  "currentTodo": "P7 CI 与交付(最后阶段)",
   "completedTodos": [
-    "P5.1 三种粒度分桶(含时区与跨年, 11 测试)",
-    "P5.2 8 项指标与中位数(奇偶分支, 含语义固定测试)",
-    "P5.3 统计端点(tzOffsetMinutes, 20 测试含隐私边界)",
-    "P5.4 统计页与自绘折线图(零新增依赖)",
-    "P5.5 验收(A8 通过, 变异测试取证, 端到端数字手工核对)"
+    "P6.1 分享 token(生成/重置/撤销, 链接由服务端拼装)",
+    "P6.2 多链接导入(逐条返回结果, 跨实例校验)",
+    "P6.3 原子退订(单一入口, 外键级联 attempt)",
+    "P6.4 导入页/分享页/退订入口(移除 P4 的尚未提供提示)",
+    "P6.5 验收(A5/A6 通过, 变异测试取证, 端到端闭环)"
   ],
-  "activeSlice": "P5 完成并提交, 准备进入 P6",
+  "activeSlice": "P6 完成并提交, 准备进入 P7 最后一个阶段",
   "evidenceRefs": [
-    "docs/aegis/work/2026-09-10-mental-math-app/evidence/p5/ACCEPTANCE.md"
+    "docs/aegis/work/2026-09-10-mental-math-app/evidence/p6/ACCEPTANCE.md"
   ],
-  "blockedOn": "CI 首跑结果需用户在 GitHub Actions 页确认",
-  "nextStep": "P6: 分享 token、多链接导入订阅、退订清历史(事务性整体操作)",
+  "blockedOn": "P7 的签名 APK 需要 keystore 与 4 个 GitHub Secret(用户已创建); CI 首跑结果仍需用户在 Actions 页确认",
+  "nextStep": "P7: release.yml(tag 触发 -> ghcr 推送 + 签名 APK + release 附件); 先校验 secrets 非空并明确报出缺哪个",
   "updatedAt": "2026-09-10"
 }

@@ -239,3 +239,27 @@
 - New risk signals:
 - 新增记录: 统计允许 float64 而判分不允许, 该边界已写入包注释以免后续误判; 遗留: 真机浏览未验证、CI 首跑待确认、P6 分享退订待做
 - Advisory decision: continue
+
+## Checkpoint Update
+
+- Current todo: P7 CI 与交付(最后阶段)
+- Active slice: P6 完成并提交, 准备进入 P7 最后一个阶段
+- Completed todos:
+- P6.1 分享 token(生成/重置/撤销, 链接由服务端拼装)
+- P6.2 多链接导入(逐条返回结果, 跨实例校验)
+- P6.3 原子退订(单一入口, 外键级联 attempt)
+- P6.4 导入页/分享页/退订入口(移除 P4 的尚未提供提示)
+- P6.5 验收(A5/A6 通过, 变异测试取证, 端到端闭环)
+- Evidence refs:
+- docs/aegis/work/2026-09-10-mental-math-app/evidence/p6/ACCEPTANCE.md
+- Blocked on: P7 的签名 APK 需要 keystore 与 4 个 GitHub Secret(用户已创建); CI 首跑结果仍需用户在 Actions 页确认
+- Next step: P7: release.yml(tag 触发 -> ghcr 推送 + 签名 APK + release 附件); 先校验 secrets 非空并明确报出缺哪个
+
+## DriftCheckDraft
+
+- Scope status: status: 完成规格§16 的 P6; 未越界到 P7
+- Compatibility status: status: (project,user) 单一级联不变量保持(退订与删项目共用同一条外键规则); 订阅不授予写权限已验证; 未提供可单独调用的删订阅行原语
+- Retirement status: status: 无退役对象; P4 的两处『尚未提供』提示已随真实功能移除; 明确拒绝短链接/二维码/订阅通知/跨实例订阅; 变异测试代码已还原
+- New risk signals:
+- 遗留: 真机人工分享粘贴未验证、跨实例订阅明确不支持、CI 首跑待用户确认、P7 签名 APK 依赖 keystore 与 secrets
+- Advisory decision: continue

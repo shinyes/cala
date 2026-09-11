@@ -3,11 +3,11 @@
   "taskId": "2026-09-10-mental-math-app",
   "taskIntentRef": "docs/aegis/work/2026-09-10-mental-math-app/task-intent-draft.json",
   "baselineRefs": [],
-  "scopeStatus": "status: 完成规格§16 的 P5; 未越界到 P6",
-  "compatStatus": "status: 无新增聚合表(统计为派生态); 未改动 round 写入语义; 统计 Tab 只读; 隐私按 (user,project) 过滤且无跨用户查询路径; 零新增依赖",
-  "retirementStatus": "status: 无退役对象; 明确拒绝图表库/物化表/时间范围选择器/跨项目汇总; 变异测试代码已还原",
+  "scopeStatus": "status: 完成规格§16 的 P6; 未越界到 P7",
+  "compatStatus": "status: (project,user) 单一级联不变量保持(退订与删项目共用同一条外键规则); 订阅不授予写权限已验证; 未提供可单独调用的删订阅行原语",
+  "retirementStatus": "status: 无退役对象; P4 的两处『尚未提供』提示已随真实功能移除; 明确拒绝短链接/二维码/订阅通知/跨实例订阅; 变异测试代码已还原",
   "newRiskSignals": [
-    "新增记录: 统计允许 float64 而判分不允许, 该边界已写入包注释以免后续误判; 遗留: 真机浏览未验证、CI 首跑待确认、P6 分享退订待做"
+    "遗留: 真机人工分享粘贴未验证、跨实例订阅明确不支持、CI 首跑待用户确认、P7 签名 APK 依赖 keystore 与 secrets"
   ],
   "decision": "continue"
 }
