@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "p7-acceptance",
+  "type": "test-report",
+  "source": "测试 keystore 真实构建 release APK + apksigner 验签 + Linux 交叉编译 + Dart YAML 结构校验",
+  "summary": "A15 本地真实验证通过: 用一次性 keystore 走完与 CI 相同的配置路径, apksigner 显示证书 DN=CN=Cala Test Signing(非 debug)。同时修复三个真实问题: P-R8 修复不彻底(环境变量到不了已在运行的进程, 改为 kotlin.incremental=false)、preflight 用 keytool 却未准备 JDK、未加引号的 heredoc 会二次展开口令。A10(tag 触发/ghcr/release 附件)工作流已交付且结构合法但需 CI 才能验证",
+  "verifier": "evidence/p7/ACCEPTANCE.md"
+}

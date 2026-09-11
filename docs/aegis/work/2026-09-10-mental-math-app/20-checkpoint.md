@@ -263,3 +263,27 @@
 - New risk signals:
 - 遗留: 真机人工分享粘贴未验证、跨实例订阅明确不支持、CI 首跑待用户确认、P7 签名 APK 依赖 keystore 与 secrets
 - Advisory decision: continue
+
+## Checkpoint Update
+
+- Current todo: 全部阶段完成；等待用户在 GitHub Actions 页确认 CI/release 首跑
+- Active slice: 全部阶段完成，进入项目收尾
+- Completed todos:
+- P7.1 Android 正式签名配置(用一次性 keystore 真实构建并验签)
+- P7.2 release.yml(5 job, preflight 集中校验)
+- P7.3 本地等效验证(Linux 交叉编译 + YAML 结构校验)
+- P7.4 验收(A15 本地真实验证; A10 待 CI)
+- 回填 5 份 ADR(规格 §12 承诺)
+- Evidence refs:
+- docs/aegis/work/2026-09-10-mental-math-app/evidence/p7/ACCEPTANCE.md
+- Blocked on: A10 需 CI 真实执行才能确认(本环境不可达 github.com 且无 Docker); 真机/浏览器人工交互未验证
+- Next step: 用户在 Actions 页确认 ci.yml 首跑; 打一个 v0.0.1 tag 观察 release.yml; 确认 Release 附件含 .tar.gz 与 .apk
+
+## DriftCheckDraft
+
+- Scope status: status: 规格 §16 的 P0-P7 全部交付，无范围外扩张；最终 10 个 Go 包 + 前端 4 层
+- Compatibility status: status: 八条架构不可协商项全部由测试守护(沙箱四配置/保存期校验/单一级联/统计派生/无浮点判分/清洗表单一owner/判分权威); 签名材料未入库
+- Retirement status: status: 退役项 = 模板默认的『release 用 debug 签名』已替换; kotlin.incremental 的退役触发条件已写明(pub cache 同盘后恢复); 变异测试代码已全部还原
+- New risk signals:
+- A10 未验证(需 CI): Docker 镜像构建/ghcr 推送/release 创建/镜像 tag 存在性; 真机与浏览器人工交互未验证; 用户真实 keystore 与 secret 的一致性由 preflight 的 keytool 试开负责报错
+- Advisory decision: pause-for-user

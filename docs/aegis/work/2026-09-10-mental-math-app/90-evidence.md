@@ -81,3 +81,11 @@ No evidence has been recorded yet.
 - Source: go test ./... (9 包) + flutter analyze/test (117 项) + 端到端功能5闭环 + 退订变异测试
 - Summary: A5/A6 通过。端到端走完分享->订阅->跟随->退订并查库确认: bob 导入 3 条(1 有效/1 令牌无效/1 跨实例)成功 1/3 且逐条有可读原因; bob 统计 3 轮而 alice 2 轮(隐私独立); alice 改项目后 bob 立即看到; bob 退订 deletedRounds=3 后再练习 403 且 alice 记录完好。变异测试: 退订只删订阅行不清轮次时 A6 测试立即失败
 - Verifier: evidence/p6/ACCEPTANCE.md
+
+## EvidenceBundleDraft
+
+- Artifact key: p7-acceptance
+- Type: test-report
+- Source: 测试 keystore 真实构建 release APK + apksigner 验签 + Linux 交叉编译 + Dart YAML 结构校验
+- Summary: A15 本地真实验证通过: 用一次性 keystore 走完与 CI 相同的配置路径, apksigner 显示证书 DN=CN=Cala Test Signing(非 debug)。同时修复三个真实问题: P-R8 修复不彻底(环境变量到不了已在运行的进程, 改为 kotlin.incremental=false)、preflight 用 keytool 却未准备 JDK、未加引号的 heredoc 会二次展开口令。A10(tag 触发/ghcr/release 附件)工作流已交付且结构合法但需 CI 才能验证
+- Verifier: evidence/p7/ACCEPTANCE.md

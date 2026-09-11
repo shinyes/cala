@@ -43,3 +43,11 @@ Entries are workspace records, not authoritative runtime decisions.
 | 2026-09-11 | plan | docs/aegis/plans/2026-09-10-p6-share-subscription.md | P6 分享订阅与退订实施计划 |
 | 2026-09-11 | evidence | docs/aegis/work/2026-09-10-mental-math-app/evidence/p6/ACCEPTANCE.md | P6 验收证据 |
 | 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p6-acceptance.json | 2026-09-10-mental-math-app evidence p6-acceptance |
+| 2026-09-11 | plan | docs/aegis/plans/2026-09-10-p7-ci-release.md | P7 CI 与交付实施计划 |
+| 2026-09-11 | evidence | docs/aegis/work/2026-09-10-mental-math-app/evidence/p7/ACCEPTANCE.md | P7 验收证据 |
+| 2026-09-10 | adr | docs/aegis/adr/ADR-0001-rule-engine-sandbox.md | ADR-0001 - 规则引擎契约与沙箱边界 |
+| 2026-09-10 | adr | docs/aegis/adr/ADR-0002-cascade-invariant.md | ADR-0002 - 答题记录生命周期绑定 (project, user) 关系 |
+| 2026-09-10 | adr | docs/aegis/adr/ADR-0003-stats-derived.md | ADR-0003 - 统计为派生态而非物化态 |
+| 2026-09-10 | adr | docs/aegis/adr/ADR-0004-scoring-single-ownership.md | ADR-0004 - 判分单一性策略（跨端一致性） |
+| 2026-09-10 | adr | docs/aegis/adr/ADR-0005-impl-decisions-changed-design.md | ADR-0005 - 实施期确立的四项工程约定（规格未涵盖） |
+| 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-acceptance.json | 2026-09-10-mental-math-app evidence p7-acceptance |

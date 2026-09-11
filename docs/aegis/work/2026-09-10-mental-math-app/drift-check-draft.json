@@ -3,11 +3,11 @@
   "taskId": "2026-09-10-mental-math-app",
   "taskIntentRef": "docs/aegis/work/2026-09-10-mental-math-app/task-intent-draft.json",
   "baselineRefs": [],
-  "scopeStatus": "status: 完成规格§16 的 P6; 未越界到 P7",
-  "compatStatus": "status: (project,user) 单一级联不变量保持(退订与删项目共用同一条外键规则); 订阅不授予写权限已验证; 未提供可单独调用的删订阅行原语",
-  "retirementStatus": "status: 无退役对象; P4 的两处『尚未提供』提示已随真实功能移除; 明确拒绝短链接/二维码/订阅通知/跨实例订阅; 变异测试代码已还原",
+  "scopeStatus": "status: 规格 §16 的 P0-P7 全部交付，无范围外扩张；最终 10 个 Go 包 + 前端 4 层",
+  "compatStatus": "status: 八条架构不可协商项全部由测试守护(沙箱四配置/保存期校验/单一级联/统计派生/无浮点判分/清洗表单一owner/判分权威); 签名材料未入库",
+  "retirementStatus": "status: 退役项 = 模板默认的『release 用 debug 签名』已替换; kotlin.incremental 的退役触发条件已写明(pub cache 同盘后恢复); 变异测试代码已全部还原",
   "newRiskSignals": [
-    "遗留: 真机人工分享粘贴未验证、跨实例订阅明确不支持、CI 首跑待用户确认、P7 签名 APK 依赖 keystore 与 secrets"
+    "A10 未验证(需 CI): Docker 镜像构建/ghcr 推送/release 创建/镜像 tag 存在性; 真机与浏览器人工交互未验证; 用户真实 keystore 与 secret 的一致性由 preflight 的 keytool 试开负责报错"
   ],
-  "decision": "continue"
+  "decision": "pause-for-user"
 }

@@ -2,13 +2,13 @@
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
   "lastCheckpointRef": "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json",
-  "resumeInstruction": "读 plans/2026-09-10-p6-share-subscription.md 与 evidence/p6/ACCEPTANCE.md; P6 已完成; 下一步写 P7 计划",
+  "resumeInstruction": "读 evidence/p7/ACCEPTANCE.md 的 §6 未验证项清单; 项目代码已全部完成; 若 CI 失败, 优先检查 subosito/flutter-action 与 golang:1.26-alpine/distroless 的 tag",
   "knownPartialWork": [
-    "P6.1 分享 token(生成/重置/撤销, 链接由服务端拼装)",
-    "P6.2 多链接导入(逐条返回结果, 跨实例校验)",
-    "P6.3 原子退订(单一入口, 外键级联 attempt)",
-    "P6.4 导入页/分享页/退订入口(移除 P4 的尚未提供提示)",
-    "P6.5 验收(A5/A6 通过, 变异测试取证, 端到端闭环)"
+    "P7.1 Android 正式签名配置(用一次性 keystore 真实构建并验签)",
+    "P7.2 release.yml(5 job, preflight 集中校验)",
+    "P7.3 本地等效验证(Linux 交叉编译 + YAML 结构校验)",
+    "P7.4 验收(A15 本地真实验证; A10 待 CI)",
+    "回填 5 份 ADR(规格 §12 承诺)"
   ],
   "mustReadBeforeContinuing": [
     "docs/aegis/work/2026-09-10-mental-math-app/10-intent.md",
@@ -16,7 +16,7 @@
     "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json"
   ],
   "unsafeToAssume": [
-    "CI 已通过",
-    "secrets 配置方式(仓库级/环境级)已知"
+    "A10 已通过",
+    "APK 可在真机覆盖安装升级"
   ]
 }
