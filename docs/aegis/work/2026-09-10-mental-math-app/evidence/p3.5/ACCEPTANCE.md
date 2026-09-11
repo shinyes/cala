@@ -171,12 +171,13 @@ Dart scoring 包（新的消费者侧 owner）、`cmd/scorpus` 生成器、CI �
 |---|---|---|---|
 | 1 | CI 工作流真实运行 | 本机无 Docker，且需要推送到 GitHub 触发 | 推送后由 GitHub Actions 验证 |
 | 2 | `subosito/flutter-action@v2` + 固定版本 `3.44.9` 的可用性 | 同上 | 同上 |
-| 3 | `golang:1.26-alpine` 等镜像 tag | 同 P0 的 P-R6 | P7 |
+| 3 | ~~`golang:1.26-alpine` 等镜像 tag~~ | ~~同 P0 的 P-R6~~ → **已在 P7 收尾时实测确认存在**（见 evidence/p7 §6.1） | 已关闭 |
 | 4 | 真机/浏览器上的实际判分行为 | 需 P4 的练习运行时接入 | P4 |
 
-> 第 1、2 项在推送后立即可见。若 action 版本号或 Flutter 版本标签有误，
-> CI 会**立即且显眼地失败**，修复代价仅为改一个字符串——这与 P-R6 的处置一致，
-> 不为此额外引入本地验证机制。
+> 第 1、2 项在推送后立即可见。**原以为**若 action 版本号或 Flutter 版本标签有误，
+> CI 会立即且显眼地失败、修复代价仅为改一个字符串。
+> 后续事实：用户确认 CI 持续通过（即该组合可用），且镜像 tag 已在 P7 收尾时实测确认。
+> 详见 evidence/p7/ACCEPTANCE.md §6.1。
 
 ---
 

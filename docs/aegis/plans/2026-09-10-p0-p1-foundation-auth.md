@@ -2732,9 +2732,9 @@ flutter analyze ; flutter test
 | P-R2 | `go mod` 拉取依赖受网络影响（本机走 `goproxy.cn`） | 已确认可用；若失败改用 `GOPROXY=https://proxy.golang.org,direct` |
 | P-R3 | `LastInsertId()` 的 `int64` 与 `?` 占位符绑定 | 计划已直接以 `int64` 传参；不使用 `::` 强转 |
 | P-R4 | 本机无 Docker，Dockerfile 只能静态检查 | 已知并接受；P7 在 CI 首次真实验证 |
-| P-R6 | `golang:1.26-alpine` 镜像 tag 无法本地验证（本机无 Docker，Docker Hub 在本环境不可达） | 若 tag 不存在，P7 的 CI 会立即且显眼地失败，修复代价仅为改一个字符串。**不为此引入额外验证机制** |
+| P-R6 | `golang:1.26-alpine` 镜像 tag 无法本地验证 | **已关闭**：P7 收尾时经 Docker Registry v2 API 实测确认 `golang:1.26-alpine` 与 `distroless/static-debian12:nonroot` 均存在（HTTP 200）。详见 `evidence/p7/ACCEPTANCE.md` §6.1 |
 | P-R7 | `GOTOOLCHAIN=auto` 依赖工具链下载；离线或受限网络下可能失败 | 1.26.0 已缓存于本机；CI 用 `go-version-file` 显式安装；Docker 构建镜像自带 1.26，不经由下载 |
-| **P-R8** | **Windows 跨盘符导致 Android 构建失败**（见下方「执行期发现 P-R8」） | **根因修复**：令 pub cache 与项目同盘。已设用户级 `PUB_CACHE=D:\Programs\Pub\Cache`。备选缓解：`kotlin.incremental=false` |
+| **P-R8** | **Windows 跨盘符导致 Android 构建失败**（见下方「执行期发现 P-R8」） | **最终修复见 P7**：原先设 `PUB_CACHE` 环境变量的做法**不可靠**（环境变量只对设置之后启动的进程生效，已在运行的父进程派生的 shell 看不到它，实测回归）；改为在 `app/android/gradle.properties` 设 `kotlin.incremental=false`，代价仅是本地重复构建失去增量编译（CI 零成本）。详见 `evidence/p7/ACCEPTANCE.md` §3.1 |
 | **P-R9** | **Windows PowerShell 5.1 的 `Add-Content`/`Set-Content` 默认用 ANSI(GBK)，会写出非法 UTF-8** | 本项目所有文件一律用编辑工具写 UTF-8；脚本写文件必须显式 `-Encoding utf8`。已全仓校验：无 BOM、无非法 UTF-8 |
 
 ### 执行期发现 P-R8：Windows 跨盘符导致 `compileDebugKotlin` 失败
