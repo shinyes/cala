@@ -57,3 +57,4 @@ Entries are workspace records, not authoritative runtime decisions.
 | 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-server-address.json | 2026-09-10-mental-math-app evidence p7-server-address |
 | 2026-09-11 | adr | docs/aegis/adr/ADR-0007-answer-must-be-numeric.md | ADR-0007 - 答案域收窄为仅数值：拒绝文本答案 |
 | 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-keypad-and-text-answer.json | 2026-09-10-mental-math-app evidence p7-keypad-and-text-answer |
+| 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-answer-integer-decimal-only.json | 2026-09-10-mental-math-app evidence p7-answer-integer-decimal-only |

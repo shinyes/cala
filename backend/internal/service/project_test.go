@@ -138,13 +138,19 @@ func TestCreateProjectRejectsTextAnswer(t *testing.T) {
 	}
 }
 
-// TestScoringStillClassifiesTextAnswer 锁定兼容边界：
-// **scoring.Classify 必须继续接受文本答案**。
+// TestScoringStillClassifiesTextAndFraction 锁定兼容边界：
+// **scoring.Classify 与 ParseRational 必须继续接受文本与分数答案**。
 //
-// 产品层拒绝了新的文本答案，但已落库的历史信封（kind=text）仍要靠
-// Classify 判分；若哪天有人「顺手」把拒绝逻辑下沉到 scoring，
-// 历史数据与错题重练会立刻无法判定。本测试防止这种下沉。
-func TestScoringStillClassifiesTextAnswer(t *testing.T) {
+// 产品层已拒绝**新建**文本答案与分数答案，但已落库的历史数据仍要靠它们判分：
+//   - 历史 `kind=text` 信封（在文本答案被允许的时期产生）
+//   - 分数形式的信封（作者在分数被允许时写的 `1/2`；
+//     以及**小数也是** num/den 形状，如 `0.5` -> 5/10，
+//     因此 `ParseRational` 的分支一条都不能少）
+//
+// 若哪天有人把拒绝逻辑「顺手」下沉到 scoring，历史数据与错题重练会立刻无法判定。
+// 本测试正是防止这种下沉。
+func TestScoringStillClassifiesTextAndFraction(t *testing.T) {
+	// 文本仍可分类
 	env, err := scoring.Classify("质数")
 	if err != nil {
 		t.Fatalf("scoring 必须继续能分类文本答案（历史数据依赖它判分）: %v", err)
@@ -153,16 +159,104 @@ func TestScoringStillClassifiesTextAnswer(t *testing.T) {
 		t.Errorf("信封 = %+v, 期望 kind=text value=质数", env)
 	}
 
-	// 数值答案不受影响
-	num, err := scoring.Classify("3/4")
-	if err != nil || num.Kind != scoring.KindRational {
-		t.Errorf("数值答案应仍可分类, 得到 %+v err=%v", num, err)
+	// 分数仍可解析
+	for _, a := range []string{"3/4", "-1/2", "7/4"} {
+		f, err := scoring.Classify(a)
+		if err != nil {
+			t.Fatalf("scoring 必须继续能分类分数答案 %q（历史数据依赖它判分）: %v", a, err)
+		}
+		if f.Kind != scoring.KindRational || f.Den == "" {
+			t.Errorf("分数 %q 的信封 = %+v, 期望 rational", a, f)
+		}
+	}
+
+	// 小数与分数数值相等这一判分基础不变：
+	// 用户敲 "0.5"，无论作者当初写的是 1/2 还是 0.5，都应判对。
+	// （这正是「去掉除号也安全」的依据，故必须钉死。）
+	half, err := scoring.Classify("1/2")
+	if err != nil {
+		t.Fatalf("解析 1/2 失败: %v", err)
+	}
+	dec, err := scoring.Classify("0.5")
+	if err != nil {
+		t.Fatalf("解析 0.5 失败: %v", err)
+	}
+	for name, env := range map[string]scoring.Envelope{"1/2": half, "0.5": dec} {
+		if got := scoring.Compare("0.5", env, scoring.Tolerance{}); !got.Correct {
+			t.Errorf("用户输入 0.5 对作者答案 %s 应判对, 得到 %+v", name, got)
+		}
 	}
 }
 
-// TestClassifyAnswerableAllowsNumeric 确认新增约束没有误伤数值答案。
+// TestCreateProjectRejectsFractionAnswer 覆盖「只接受整数或小数」。
+//
+// 收窄理由与文本答案同源：练习键盘没有除号（规格 §9.3），
+// 因此分数形式里**无限循环小数**（如 1/3）永远敲不出来，须靠容差才行。
+// 只允许整数与小数后，「作者写的答案一定能用键盘原样敲出」无条件成立。
+func TestCreateProjectRejectsFractionAnswer(t *testing.T) {
+	svc, st := newProjectSvc(t)
+	owner := makeUser(t, st, "owner")
+
+	cases := map[string]string{
+		"真分数":  `function generate(cfg){ return {q:"1/2 = ?", a:"1/2"} }`,
+		"假分数":  `function generate(cfg){ return {q:"7/4 = ?", a:"7/4"} }`,
+		"负分数":  `function generate(cfg){ return {q:"-1/2 = ?", a:"-1/2"} }`,
+		"全角除号": `function generate(cfg){ return {q:"1／2 = ?", a:"１／２"} }`,
+	}
+	for name, src := range cases {
+		t.Run(name, func(t *testing.T) {
+			in := validInput()
+			in.RuleSource = src
+			_, err := svc.Create(owner, in)
+			if err == nil {
+				t.Fatal("分数答案应被拒绝：练习键盘没有除号")
+			}
+			if !errors.Is(err, ErrInvalidProject) {
+				t.Errorf("应返回 ErrInvalidProject, 得到 %v", err)
+			}
+			msg := err.Error()
+			if !strings.Contains(msg, "题") {
+				t.Errorf("应指出是第几题, 得到: %v", msg)
+			}
+			// 必须给出改法，否则作者只知道「不行」而不知「怎么办」
+			if !strings.Contains(msg, "小数") {
+				t.Errorf("应提示改写为小数, 得到: %v", msg)
+			}
+		})
+	}
+}
+
+// TestCreateProjectAcceptsIntegerAndDecimal 确认收窄后整数与小数均可用。
+//
+// 这些形态都必须能通过**练习键盘**原样敲出（`0-9` `.` `-`），
+// 否则收窄就失去了意义。
+func TestCreateProjectAcceptsIntegerAndDecimal(t *testing.T) {
+	svc, st := newProjectSvc(t)
+	owner := makeUser(t, st, "owner")
+
+	accepted := []string{
+		"42", "-7", "+3", "0",
+		"0.5", "-0.5", ".5", "0.50", "-1.25",
+		"1,234",  // 千分位逗号由清洗表删除
+		"１２",     // 全角数字由清洗表转换
+		"  12  ", // 首尾空白
+	}
+	for i, a := range accepted {
+		t.Run(a, func(t *testing.T) {
+			in := validInput()
+			// 题号唯一即可，避免多次建项目时标题冲突
+			in.Title = "整数小数" + string(rune('A'+i))
+			in.RuleSource = `function generate(cfg){ return {q:"?", a:"` + a + `"} }`
+			if _, err := svc.Create(owner, in); err != nil {
+				t.Errorf("答案 %q 应被接受, 得到: %v", a, err)
+			}
+		})
+	}
+}
+
+// TestClassifyAnswerableAllowsNumeric 确认新增约束没有误伤合法数值。
 func TestClassifyAnswerableAllowsNumeric(t *testing.T) {
-	for _, a := range []string{"42", "-7", "0.75", "3/4", "-0.5", "  12  "} {
+	for _, a := range []string{"42", "-7", "0.75", "-0.5", "  12  "} {
 		if _, err := classifyAnswerable(a); err != nil {
 			t.Errorf("数值答案 %q 不应被拒绝: %v", a, err)
 		}
@@ -173,19 +267,34 @@ func TestClassifyAnswerableAllowsNumeric(t *testing.T) {
 			t.Errorf("文本答案 %q 应被拒绝", a)
 		}
 	}
+	// 分数必须被拒（本项由上一版测试的「应接受」改为「应拒绝」：
+	// 产品要求只接受整数或小数，见 ADR-0007 修订）
+	for _, a := range []string{"3/4", "1/2", "-5/2", "1 / 2", "１／２"} {
+		if _, err := classifyAnswerable(a); err == nil {
+			t.Errorf("分数答案 %q 应被拒绝（键盘没有除号）", a)
+		}
+	}
 }
 
 // TestCreateProjectRejectsMalformedAnswer 覆盖验收标准 A11：
 // 答案无法分类时必须在保存期报错，并指出是第几题，否则问题会在用户练习时才暴露。
+//
+// 注意「带空格的分数」`1 / 2` 归入本组而非「分数形式」组：
+// 按文法（`整数/整数`）它**本身就是畸形输入**，清洗表也不删除 ASCII 空格，
+// 因此它走的是 Classify 的格式错误分支。这与 `1/2`（**合法但已不允许的形式**）
+// 是两类不同问题：前者是笔误，后者是形态受限。作者看到的提示也因此不同，
+// 这是有意的 —— 把笔误说成「形态受限」会让人以为改写小数即可，
+// 而实际问题是他把分数写错了。
 func TestCreateProjectRejectsMalformedAnswer(t *testing.T) {
 	svc, st := newProjectSvc(t)
 	owner := makeUser(t, st, "owner")
 
 	cases := map[string]string{
-		"分母为零":  `function generate(cfg){ return {q:"1/0 = ?", a:"1/0"} }`,
-		"畸形数值":  `function generate(cfg){ return {q:"1.2.3 = ?", a:"1.2.3"} }`,
-		"答案为空":  `function generate(cfg){ return {q:"?", a:" "} }`,
-		"含控制字符": `function generate(cfg){ return {q:"?", a:"a\u0000b"} }`,
+		"分母为零":   `function generate(cfg){ return {q:"1/0 = ?", a:"1/0"} }`,
+		"畸形数值":   `function generate(cfg){ return {q:"1.2.3 = ?", a:"1.2.3"} }`,
+		"答案为空":   `function generate(cfg){ return {q:"?", a:" "} }`,
+		"含控制字符":  `function generate(cfg){ return {q:"?", a:"a\u0000b"} }`,
+		"带空格的分数": `function generate(cfg){ return {q:"1 / 2 = ?", a:"1 / 2"} }`,
 	}
 	for name, src := range cases {
 		t.Run(name, func(t *testing.T) {

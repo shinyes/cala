@@ -208,7 +208,10 @@ class _ProjectEditorPageState extends ConsumerState<ProjectEditorPage> {
               padding: EdgeInsets.only(bottom: 6),
               child: Text(
                 '定义 function generate(cfg)，返回 { q: 题面, a: 答案 }。\n'
-                '答案须为数字、分数、小数，或纯文本。',
+                '答案必须是整数或小数（如 42、-7、0.75）。\n'
+                '练习键盘只有数字、小数点和负号，所以答案不能是文字或分数 ——\n'
+                '分数请写成等值小数（1/2 写作 0.5）；若无法写成有限小数'
+                '（如 1/3），请写近似值（如 0.33）并配置容差。',
                 style: TextStyle(fontSize: 12, color: CupertinoColors.secondaryLabel),
               ),
             ),

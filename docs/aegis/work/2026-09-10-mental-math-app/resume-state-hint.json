@@ -2,10 +2,12 @@
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
   "lastCheckpointRef": "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json",
-  "resumeInstruction": "读 evidence/p7/ACCEPTANCE.md §6; 唯一剩余: 真机验证",
+  "resumeInstruction": "读 evidence/p7/ACCEPTANCE.md §6.6; 真机验证仍未做",
   "knownPartialWork": [
-    "v0.0.3 发布成功(run #34590282901, 6 job 全 success)",
-    "已发布 APK 复核: INTERNET 权限与明文配置随签名产物生效; 签名身份跨版本稳定"
+    "键盘字母表收敛为 0-9 . -",
+    "答案域收窄: 拒绝文本答案与分数形式(ADR-0007 含修订)",
+    "修掉收窄引入的死提示(scoring 建议改用文本)",
+    "规格/基线/证据/ADR 同步"
   ],
   "mustReadBeforeContinuing": [
     "docs/aegis/work/2026-09-10-mental-math-app/10-intent.md",
@@ -13,6 +15,6 @@
     "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json"
   ],
   "unsafeToAssume": [
-    "真机行为(权限与配置已解包确认, 但未在设备上运行)"
+    "真机行为(权限已解包确认但未在设备上运行)"
   ]
 }

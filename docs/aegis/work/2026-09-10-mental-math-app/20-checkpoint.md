@@ -354,3 +354,17 @@
 - New risk signals:
 - 无限循环小数形式的答案须配容差, 已写入规格与 keypad.dart 提示; 作者仍可能忽略
 - Advisory decision: continue
+
+## Checkpoint Update
+
+- Current todo: 收窄已完成; v0.0.4 待发布
+- Active slice: 发布 v0.0.4
+- Completed todos:
+- 键盘字母表收敛为 0-9 . -
+- 答案域收窄: 拒绝文本答案与分数形式(ADR-0007 含修订)
+- 修掉收窄引入的死提示(scoring 建议改用文本)
+- 规格/基线/证据/ADR 同步
+- Evidence refs:
+- §6.6; ADR-0007
+- Blocked on: 无
+- Next step: 打 v0.0.4 tag

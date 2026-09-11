@@ -1,16 +1,18 @@
 {
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
-  "currentTodo": "全部完成; v0.0.3 已发布",
+  "currentTodo": "收窄已完成; v0.0.4 待发布",
   "completedTodos": [
-    "v0.0.3 发布成功(run #34590282901, 6 job 全 success)",
-    "已发布 APK 复核: INTERNET 权限与明文配置随签名产物生效; 签名身份跨版本稳定"
+    "键盘字母表收敛为 0-9 . -",
+    "答案域收窄: 拒绝文本答案与分数形式(ADR-0007 含修订)",
+    "修掉收窄引入的死提示(scoring 建议改用文本)",
+    "规格/基线/证据/ADR 同步"
   ],
-  "activeSlice": "交付",
+  "activeSlice": "发布 v0.0.4",
   "evidenceRefs": [
-    "§6.5"
+    "§6.6; ADR-0007"
   ],
   "blockedOn": "无",
-  "nextStep": "真机安装并验证联网 + 配置服务器地址 + 覆盖安装",
+  "nextStep": "打 v0.0.4 tag",
   "updatedAt": "2026-09-11"
 }
