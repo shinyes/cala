@@ -34,3 +34,6 @@ Entries are workspace records, not authoritative runtime decisions.
 | 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p3-acceptance.json | 2026-09-10-mental-math-app evidence p3-acceptance |
 | 2026-09-11 | evidence | docs/aegis/work/2026-09-10-mental-math-app/evidence/p3.5/ACCEPTANCE.md | P3.5 跨端判分一致性验收证据 |
 | 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p3-5-acceptance.json | 2026-09-10-mental-math-app evidence p3.5-acceptance |
+| 2026-09-11 | plan | docs/aegis/plans/2026-09-10-p4-frontend-runtime.md | P4 前端骨架与练习运行时实施计划 |
+| 2026-09-11 | evidence | docs/aegis/work/2026-09-10-mental-math-app/evidence/p4/ACCEPTANCE.md | P4 验收证据 |
+| 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p4-acceptance.json | 2026-09-10-mental-math-app evidence p4-acceptance |

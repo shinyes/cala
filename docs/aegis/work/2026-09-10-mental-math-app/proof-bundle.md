@@ -22,12 +22,13 @@ This proof bundle is an advisory Aegis Method Pack record. It does not determine
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p2-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p3-5-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p3-acceptance.json
+- docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p4-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-spec-approved.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-sqlite-cascade-spike.json
 
 ## Drift Check
 
-- Scope status: status: 完成规格§16 的 P3.5; 过程偏差(缺计划文档)已如实记录于 evidence §6
-- Compatibility status: status: 清洗表单一下发(客户端只应用数据, 已由空表测试证明未内置映射); 判分无浮点由双侧守护; 单向对齐(Go 生成->Dart 对齐)
-- Retirement status: status: 无退役对象; 三项变异测试代码已全部还原(grep MUTATION 无残留); 明确拒绝客户端 JS 引擎与人工同步两方案并记录理由
+- Scope status: status: 完成规格§16 的 P4; 未越界到 P5/P6
+- Compatibility status: status: 判分只经 scoring.compare 且只用服务端清洗表(有全角数字测试守护); 错题以 serverIsCorrect 筛选; 重练用快照; 三 Tab 职责不重叠; 作者契约未扩张
+- Retirement status: status: 无退役对象; 明确拒绝 Material 组件(自绘进度条)、代码生成、路由框架、图表库、本地库; 移除了一处我自写的多层 JSON 解码包装
 - Advisory decision: continue

@@ -3,13 +3,14 @@
   "baselineRefs": [],
   "impactStatement": "docs/aegis/work/2026-09-10-mental-math-app/impact-statement-draft.json",
   "compatPlan": "Compatibility boundary not yet refined.",
-  "retirementPlan": "status: 无退役对象; 三项变异测试代码已全部还原(grep MUTATION 无残留); 明确拒绝客户端 JS 引擎与人工同步两方案并记录理由",
+  "retirementPlan": "status: 无退役对象; 明确拒绝 Material 组件(自绘进度条)、代码生成、路由框架、图表库、本地库; 移除了一处我自写的多层 JSON 解码包装",
   "evidenceBundle": [
     "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-goja-spike-output.json",
     "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p0-p1-acceptance.json",
     "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p2-acceptance.json",
     "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p3-5-acceptance.json",
     "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p3-acceptance.json",
+    "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p4-acceptance.json",
     "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-spec-approved.json",
     "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-sqlite-cascade-spike.json"
   ]

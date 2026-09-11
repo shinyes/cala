@@ -187,3 +187,31 @@
 - New risk signals:
 - CI 无法本地验证(本环境不可达 github.com); goja 无内存上限仍未解决; subosito/flutter-action 固定版本组合待 CI 首跑确认
 - Advisory decision: continue
+
+## Checkpoint Update
+
+- Current todo: P5 统计
+- Active slice: P4 完成并提交, 准备进入 P5 统计
+- Completed todos:
+- P4.1 API 客户端与数据模型(24 测试, 离线替身)
+- P4.2 登录态与注册登录页(11 测试)
+- P4.3 三 Tab 骨架(职责不重叠)
+- P4.4 项目列表与项目编辑(规则错误原样展示)
+- P4.5 练习运行时状态机(39 测试)
+- P4.6 练习页/自带键盘/总结页
+- P4.7 错题页与重练(快照不重新出题) + 后端 attempts 端点
+- P4.8 我的 Tab/统计占位/验收
+- 修复种子精度跨端 bug(2^53 上限 + 两项测试取证)
+- Evidence refs:
+- docs/aegis/work/2026-09-10-mental-math-app/evidence/p4/ACCEPTANCE.md
+- Blocked on: CI 首跑结果需用户在 GitHub Actions 页确认; 真机交互与浏览器人工点击未验证(无交互会话)
+- Next step: P5: /stats 端点、日/周/月分桶、8 项指标(含中位数)、统计页 UI
+
+## DriftCheckDraft
+
+- Scope status: status: 完成规格§16 的 P4; 未越界到 P5/P6
+- Compatibility status: status: 判分只经 scoring.compare 且只用服务端清洗表(有全角数字测试守护); 错题以 serverIsCorrect 筛选; 重练用快照; 三 Tab 职责不重叠; 作者契约未扩张
+- Retirement status: status: 无退役对象; 明确拒绝 Material 组件(自绘进度条)、代码生成、路由框架、图表库、本地库; 移除了一处我自写的多层 JSON 解码包装
+- New risk signals:
+- 新增: 种子精度已修复; 遗留: 真机交互与浏览器人工点击未验证、统计图表待 P5、分享退订待 P6、CI 首跑待用户确认
+- Advisory decision: continue

@@ -57,3 +57,11 @@ No evidence has been recorded yet.
 - Source: flutter test (13872 条语料比对) + go test ./cmd/scorpus/ + 三项变异测试
 - Summary: A12/A13 通过。13872 条语料逐例一致(分类628+比较13244)。变异测试证明门禁有捕获能力: Dart 改 double 仅 4/13244 命中(恰为植入陷阱, 说明用例针对性才是强度来源); 静默降级 278/628 命中; 改 Go 清洗表不重新生成则新鲜度护栏失败。已记录过程偏差: P3.5 未单独写计划文档
 - Verifier: evidence/p3.5/ACCEPTANCE.md
+
+## EvidenceBundleDraft
+
+- Artifact key: p4-acceptance
+- Type: test-report
+- Source: flutter analyze/test/build + go test ./... + 手工端到端 HTTP + 隐私边界验证
+- Summary: A9 通过。前端 94 项测试、后端 8 包全绿、analyze 无 issue、apk 与 web 均构建成功。端到端走通注册->建项目->出题->交卷->错题并验证隐私(他人读轮次记录得 404)。发现并修复只在 Flutter Web 触发的种子精度 bug: 63 位种子经 JSON 数字(JS 只有 53 位尾数)往返后变值, 导致服务端重放出不同题目、每题判错; 修复为 2^53 上限并附两项测试(一项断言往返无损, 一项证明该断言的必要性)
+- Verifier: evidence/p4/ACCEPTANCE.md
