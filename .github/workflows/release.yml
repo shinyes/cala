@@ -21,6 +21,9 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       version_code: ${{ steps.version.outputs.version_code }}
+      # 由 preflight 解析好的别名，供 apk job 直接使用。
+      # 这样「别名规范化」只有一处实现，两个 job 不可能得出不同结果。
+      key_alias: ${{ steps.keystore.outputs.key_alias }}
     steps:
       - uses: actions/checkout@v6
 
@@ -75,6 +78,7 @@ jobs:
           echo "4 个签名 secret 均已配置。"
 
       - name: 校验 keystore 可解码、能打开，且别名存在
+        id: keystore
         env:
           KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -105,33 +109,43 @@ jobs:
             | grep -i 'PrivateKeyEntry' | sed 's/,.*//' | sed 's/^/  /' \
             || echo "  （没有找到私钥条目——该 keystore 无法用于签名）"
 
-          # 别名修剪首尾空白后再比对。
-          # 别名从不合法地包含首尾空白，而从网页粘贴到 secret 输入框时
-          # 很容易带上换行或空格 —— 这会让 keytool 找不到条目，
-          # 报出与「别名真的不存在」相同的错误。
-          alias_trimmed="$(printf '%s' "$KEY_ALIAS" | tr -d ' \t\r\n')"
-          if [ -z "$alias_trimmed" ]; then
-            echo "::error::ANDROID_KEY_ALIAS 为空。请把上面列出的别名填入该 secret。"
+          # 别名规范化：只保留别名可能出现的字符（字母、数字、下划线、连字符、点）。
+          #
+          # 为什么不是简单的修剪空白：从网页粘贴到 secret 输入框时，带进来的可能
+          # 不只是普通空格 —— 实测确认零宽空格 U+200B 能穿过 `tr -d ' \t\r\n'`
+          # （该写法只处理 ASCII），NBSP(U+00A0) 与全角空格(U+3000) 同样会穿过，
+          # 而它们都不可见，表现为「别名看起来完全正确却找不到条目」。
+          #
+          # 激进规范化在这里是**安全**的：下一步会用规范化结果去 keystore 里
+          # 实际查找，找不到就硬失败。因此不存在「把错误别名悄悄改成另一个可用别名、
+          # 从而用错密钥签名」的风险 —— 只会命中用户显式填写的那个别名。
+          alias_normalized="$(printf '%s' "$KEY_ALIAS" | tr -cd 'A-Za-z0-9_.-')"
+          if [ -z "$alias_normalized" ]; then
+            echo "::error::ANDROID_KEY_ALIAS 为空或只含不可见字符。请把上面列出的别名填入该 secret。"
             exit 1
           fi
-          if [ "$alias_trimmed" != "$KEY_ALIAS" ]; then
-            echo "::warning::ANDROID_KEY_ALIAS 含首尾空白，已自动修剪（建议清理该 secret）"
+          if [ "$alias_normalized" != "$KEY_ALIAS" ]; then
+            echo "::warning::ANDROID_KEY_ALIAS 含空格或不可见字符，已规范化为 '$alias_normalized'（建议清理该 secret）"
           fi
 
           if ! keytool -list -keystore "$RUNNER_TEMP/preflight.jks" -storepass "$KS_PASS" \
-                 -alias "$alias_trimmed" > /dev/null 2>&1; then
+                 -alias "$alias_normalized" > /dev/null 2>&1; then
             # 把**实际存在的别名**放进 annotation，而不只是日志里。
             # 理由：失败注解可在 Checks 界面直接看到，也能通过公开 API 读取，
             # 无需翻构建日志（日志需要认证）。别名不是机密——签名需要同时具备
             # keystore 文件与两个口令，仅知道别名没有任何用处；
-            # Android 官方文档与大量公开仓库都把别名当作非敏感信息。
+            # Android 官方文档与大量公开仓库都把别名当作非敏感信息
+            # （本项目自己的 key.properties.example 里也写着 keyAlias=cala）。
             # 这让「secret 填错」这类问题一次就能定位，而不必反复试错。
             available="$(keytool -list -keystore "$RUNNER_TEMP/preflight.jks" -storepass "$KS_PASS" 2>/dev/null \
               | grep -i 'PrivateKeyEntry' | sed 's/,.*//' | tr -d ' ' | tr '\n' ',' | sed 's/,$//' || true)"
             echo "::error::ANDROID_KEY_ALIAS 在 keystore 中不存在。keystore 里实际可用的别名: ${available:-（未找到任何私钥条目）}"
             exit 1
           fi
-          echo "别名 '$alias_trimmed' 校验通过"
+          echo "别名 '$alias_normalized' 校验通过"
+
+          # 把解析结果交给 apk job，使「别名规范化」只有这一处实现。
+          echo "key_alias=$alias_normalized" >> "$GITHUB_OUTPUT"
 
           rm -f "$RUNNER_TEMP/preflight.jks"
 
@@ -259,32 +273,31 @@ jobs:
           # 表现为「口令明明是对的却签名失败」。
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          # 别名直接使用 preflight 的解析结果，**不在此重复规范化**：
+          # 同一逻辑有两份实现就会漂移（先前修「别名含空白」时正是要改两处）。
+          # preflight 已校验该别名确实存在于 keystore 中。
+          RESOLVED_ALIAS: ${{ needs.preflight.outputs.key_alias }}
         run: |
           set -euo pipefail
           printf '%s' "$KS_B64" | tr -d ' \t\r\n' | base64 -d > "$RUNNER_TEMP/release.jks"
 
-          # 别名修剪首尾空白（别名从不合法地包含首尾空白，而粘贴很容易带上）。
-          # preflight 已校验过该别名存在于 keystore 中。
-          alias_trimmed="$(printf '%s' "$KEY_ALIAS" | tr -d ' \t\r\n')"
+          if [ -z "${RESOLVED_ALIAS:-}" ]; then
+            echo "::error::preflight 未提供解析后的别名（key_alias 输出为空）"
+            exit 1
+          fi
 
           # heredoc 只展开下面这些我们自己设定的变量；其值不会再被二次展开。
           cat > app/android/key.properties <<EOF
           storePassword=${KS_PASS}
           keyPassword=${KEY_PASS}
-          keyAlias=${alias_trimmed}
+          keyAlias=${RESOLVED_ALIAS}
           storeFile=$RUNNER_TEMP/release.jks
           EOF
 
           # 只确认文件就位，绝不打印内容（含口令）
           test -s app/android/key.properties && echo "key.properties 已生成"
           test -s "$RUNNER_TEMP/release.jks" && echo "keystore 已就位"
-
-          # 刻意**不**在此重复 preflight 的 keystore 校验。
-          # 校验的 owner 是 preflight 一处：先前把同一段校验写在这两个 job 里，
-          # 结果修「别名含空白」这个 bug 时要改两处 —— 那正是重复实现会漂移的信号。
-          # 本步骤只负责「转换」（写 key.properties）与「就位确认」。
-          echo "签名材料已就位（校验由 preflight 负责）"
+          echo "使用别名: $RESOLVED_ALIAS"
 
       - name: 构建 release APK
         working-directory: app
