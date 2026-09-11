@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "p5-acceptance",
+  "type": "test-report",
+  "source": "go test ./... (9 包) + flutter analyze/test (107 项) + 端到端三种粒度 + 中位数变异测试",
+  "summary": "A8 通过。新增 internal/stats 36 测试、统计端点 20 测试、折线图 13 测试。端到端手工核对: 三轮 4000/8000/12000ms -> min4000 max12000 avg8000 median8000; 正确率 1.0/0.5/0.0 -> avg0.5 median0.5。隐私边界与派生态均有测试守护。变异测试: 中位数偶数分支改为取下中位数后偶数用例全失败而奇数用例仍通过",
+  "verifier": "evidence/p5/ACCEPTANCE.md"
+}

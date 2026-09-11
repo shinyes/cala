@@ -215,3 +215,27 @@
 - New risk signals:
 - 新增: 种子精度已修复; 遗留: 真机交互与浏览器人工点击未验证、统计图表待 P5、分享退订待 P6、CI 首跑待用户确认
 - Advisory decision: continue
+
+## Checkpoint Update
+
+- Current todo: P6 分享订阅与退订
+- Active slice: P5 完成并提交, 准备进入 P6
+- Completed todos:
+- P5.1 三种粒度分桶(含时区与跨年, 11 测试)
+- P5.2 8 项指标与中位数(奇偶分支, 含语义固定测试)
+- P5.3 统计端点(tzOffsetMinutes, 20 测试含隐私边界)
+- P5.4 统计页与自绘折线图(零新增依赖)
+- P5.5 验收(A8 通过, 变异测试取证, 端到端数字手工核对)
+- Evidence refs:
+- docs/aegis/work/2026-09-10-mental-math-app/evidence/p5/ACCEPTANCE.md
+- Blocked on: CI 首跑结果需用户在 GitHub Actions 页确认
+- Next step: P6: 分享 token、多链接导入订阅、退订清历史(事务性整体操作)
+
+## DriftCheckDraft
+
+- Scope status: status: 完成规格§16 的 P5; 未越界到 P6
+- Compatibility status: status: 无新增聚合表(统计为派生态); 未改动 round 写入语义; 统计 Tab 只读; 隐私按 (user,project) 过滤且无跨用户查询路径; 零新增依赖
+- Retirement status: status: 无退役对象; 明确拒绝图表库/物化表/时间范围选择器/跨项目汇总; 变异测试代码已还原
+- New risk signals:
+- 新增记录: 统计允许 float64 而判分不允许, 该边界已写入包注释以免后续误判; 遗留: 真机浏览未验证、CI 首跑待确认、P6 分享退订待做
+- Advisory decision: continue

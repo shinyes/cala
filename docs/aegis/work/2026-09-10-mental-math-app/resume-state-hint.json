@@ -2,17 +2,13 @@
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
   "lastCheckpointRef": "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json",
-  "resumeInstruction": "读 plans/2026-09-10-p4-frontend-runtime.md 与 evidence/p4/ACCEPTANCE.md; P4 已完成; 下一步写 P5 计划",
+  "resumeInstruction": "读 plans/2026-09-10-p5-stats.md 与 evidence/p5/ACCEPTANCE.md; P5 已完成; 下一步写 P6 计划",
   "knownPartialWork": [
-    "P4.1 API 客户端与数据模型(24 测试, 离线替身)",
-    "P4.2 登录态与注册登录页(11 测试)",
-    "P4.3 三 Tab 骨架(职责不重叠)",
-    "P4.4 项目列表与项目编辑(规则错误原样展示)",
-    "P4.5 练习运行时状态机(39 测试)",
-    "P4.6 练习页/自带键盘/总结页",
-    "P4.7 错题页与重练(快照不重新出题) + 后端 attempts 端点",
-    "P4.8 我的 Tab/统计占位/验收",
-    "修复种子精度跨端 bug(2^53 上限 + 两项测试取证)"
+    "P5.1 三种粒度分桶(含时区与跨年, 11 测试)",
+    "P5.2 8 项指标与中位数(奇偶分支, 含语义固定测试)",
+    "P5.3 统计端点(tzOffsetMinutes, 20 测试含隐私边界)",
+    "P5.4 统计页与自绘折线图(零新增依赖)",
+    "P5.5 验收(A8 通过, 变异测试取证, 端到端数字手工核对)"
   ],
   "mustReadBeforeContinuing": [
     "docs/aegis/work/2026-09-10-mental-math-app/10-intent.md",
@@ -20,7 +16,7 @@
     "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json"
   ],
   "unsafeToAssume": [
-    "真机交互体验已确认",
+    "统计页真机浏览体验已确认",
     "CI 已通过"
   ]
 }

@@ -65,3 +65,11 @@ No evidence has been recorded yet.
 - Source: flutter analyze/test/build + go test ./... + 手工端到端 HTTP + 隐私边界验证
 - Summary: A9 通过。前端 94 项测试、后端 8 包全绿、analyze 无 issue、apk 与 web 均构建成功。端到端走通注册->建项目->出题->交卷->错题并验证隐私(他人读轮次记录得 404)。发现并修复只在 Flutter Web 触发的种子精度 bug: 63 位种子经 JSON 数字(JS 只有 53 位尾数)往返后变值, 导致服务端重放出不同题目、每题判错; 修复为 2^53 上限并附两项测试(一项断言往返无损, 一项证明该断言的必要性)
 - Verifier: evidence/p4/ACCEPTANCE.md
+
+## EvidenceBundleDraft
+
+- Artifact key: p5-acceptance
+- Type: test-report
+- Source: go test ./... (9 包) + flutter analyze/test (107 项) + 端到端三种粒度 + 中位数变异测试
+- Summary: A8 通过。新增 internal/stats 36 测试、统计端点 20 测试、折线图 13 测试。端到端手工核对: 三轮 4000/8000/12000ms -> min4000 max12000 avg8000 median8000; 正确率 1.0/0.5/0.0 -> avg0.5 median0.5。隐私边界与派生态均有测试守护。变异测试: 中位数偶数分支改为取下中位数后偶数用例全失败而奇数用例仍通过
+- Verifier: evidence/p5/ACCEPTANCE.md
