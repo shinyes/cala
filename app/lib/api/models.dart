@@ -59,6 +59,12 @@ class Project {
   final String createdAt;
   final String updatedAt;
 
+  /// 分享 token。未分享时为 null。
+  ///
+  /// 后端只在项目详情里返回它；完整链接（含服务器地址）需要调用
+  /// `POST /api/projects/:id/share` 获取，因为链接里的 host 取自该请求的 Host 头。
+  final String? shareToken;
+
   /// owner 或 subscriber，由后端查询填充。
   final String access;
 
@@ -74,6 +80,7 @@ class Project {
     this.toleranceDen,
     required this.createdAt,
     required this.updatedAt,
+    this.shareToken,
     this.access = '',
   });
 
@@ -89,6 +96,7 @@ class Project {
         toleranceDen: (j['toleranceDen'] as num?)?.toInt(),
         createdAt: j['createdAt'] as String? ?? '',
         updatedAt: j['updatedAt'] as String? ?? '',
+        shareToken: j['shareToken'] as String?,
         access: j['access'] as String? ?? '',
       );
 

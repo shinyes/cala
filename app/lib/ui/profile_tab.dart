@@ -5,7 +5,9 @@ import '../api/client.dart';
 import '../api/models.dart';
 import '../state/projects.dart';
 import '../state/session.dart';
+import '../state/subscriptions.dart';
 import 'project_editor_page.dart';
+import 'share_page.dart';
 import 'shell.dart' show describeError;
 
 /// 我的 Tab：账号与我创建的项目（规格 §4.3）。
@@ -69,7 +71,7 @@ class ProfileTab extends ConsumerWidget {
                   trailing: CupertinoButton(
                     padding: EdgeInsets.zero,
                     child: const Icon(CupertinoIcons.minus_circle),
-                    onPressed: () => _showUnsubscribeNotYet(context, p),
+                    onPressed: () => _confirmUnsubscribe(context, ref, p),
                   ),
                 ),
               ),
@@ -112,7 +114,11 @@ class ProfileTab extends ConsumerWidget {
           CupertinoActionSheetAction(
             onPressed: () {
               Navigator.of(ctx).pop();
-              _showShareNotYet(context);
+              Navigator.of(context).push(
+                CupertinoPageRoute<void>(
+                  builder: (_) => SharePage(project: p),
+                ),
+              );
             },
             child: const Text('分享订阅链接'),
           ),
@@ -168,6 +174,44 @@ class ProfileTab extends ConsumerWidget {
     );
   }
 
+  /// 退订是**不可逆的破坏性操作**：会清空用户自己在该项目下的全部答题记录与统计。
+  ///
+  /// 因此确认对话框必须把后果说清楚，而不是只问「确定吗」。
+  void _confirmUnsubscribe(BuildContext context, WidgetRef ref, Project p) {
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: Text('退订「${p.title}」'),
+        content: const Text(
+          '这会删除你在该项目下的**全部答题记录与统计**，且无法恢复。\n\n'
+          '项目本身与其他人的记录不受影响。之后你可以重新订阅，'
+          '但已删除的历史不会回来。',
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('取消'),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              try {
+                await ref
+                    .read(subscriptionProvider.notifier)
+                    .unsubscribe(p.id);
+              } on Object catch (e) {
+                if (!context.mounted) return;
+                _alert(context, '退订失败', describeError(e));
+              }
+            },
+            child: const Text('退订并删除记录'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _confirmLogout(BuildContext context, WidgetRef ref) {
     showCupertinoDialog<void>(
       context: context,
@@ -191,19 +235,6 @@ class ProfileTab extends ConsumerWidget {
       ),
     );
   }
-
-  void _showShareNotYet(BuildContext context) => _alert(
-        context,
-        '尚未提供',
-        '分享订阅链接将在后续版本提供。',
-      );
-
-  void _showUnsubscribeNotYet(BuildContext context, Project p) => _alert(
-        context,
-        '尚未提供',
-        '退订「${p.title}」将在后续版本提供。\n\n'
-        '注意：退订会同时清空你在该项目下的全部答题记录与统计。',
-      );
 }
 
 void _alert(BuildContext context, String title, String message) {

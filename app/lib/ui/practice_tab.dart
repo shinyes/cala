@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/models.dart';
 import '../state/projects.dart';
+import 'import_subscriptions_page.dart';
 import 'practice_page.dart';
 import 'project_editor_page.dart';
 
@@ -129,7 +130,11 @@ class PracticeTab extends ConsumerWidget {
           CupertinoActionSheetAction(
             onPressed: () {
               Navigator.of(ctx).pop();
-              _showImportNotYet(context);
+              Navigator.of(context).push(
+                CupertinoPageRoute<void>(
+                  builder: (_) => const ImportSubscriptionsPage(),
+                ),
+              );
             },
             child: const Text('导入订阅链接'),
           ),
@@ -138,25 +143,6 @@ class PracticeTab extends ConsumerWidget {
           onPressed: () => Navigator.of(ctx).pop(),
           child: const Text('取消'),
         ),
-      ),
-    );
-  }
-
-  /// 订阅导入属 P6。此处明确告知而非静默失效——
-  /// 让用户点了没反应比告诉他「还没有」更糟。
-  void _showImportNotYet(BuildContext context) {
-    showCupertinoDialog<void>(
-      context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: const Text('尚未提供'),
-        content: const Text('导入订阅链接将在后续版本提供。'),
-        actions: [
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('好'),
-          ),
-        ],
       ),
     );
   }

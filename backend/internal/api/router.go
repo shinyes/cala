@@ -53,6 +53,8 @@ func NewRouter(d Deps) *fiber.App {
 		if d.Handlers.Projects != nil {
 			d.Handlers.registerProjects(api)
 			d.Handlers.registerStats(api)
+			d.Handlers.registerShare(api)
+			d.Handlers.registerSubscriptions(api)
 		}
 		if d.Handlers.Rounds != nil {
 			d.Handlers.registerRounds(api)
