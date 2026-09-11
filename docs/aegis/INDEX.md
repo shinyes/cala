@@ -60,3 +60,4 @@ Entries are workspace records, not authoritative runtime decisions.
 | 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-answer-integer-decimal-only.json | 2026-09-10-mental-math-app evidence p7-answer-integer-decimal-only |
 | 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-image-version.json | 2026-09-10-mental-math-app evidence p7-image-version |
 | 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-v004-released.json | 2026-09-10-mental-math-app evidence p7-v004-released |
+| 2026-09-12 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-change-password.json | 2026-09-10-mental-math-app evidence p7-change-password |

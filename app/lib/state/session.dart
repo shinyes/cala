@@ -229,6 +229,34 @@ class SessionNotifier extends Notifier<SessionState> {
     await refreshPublicSettings();
   }
 
+  /// 修改口令。
+  ///
+  /// 失败时抛 [ApiException]，其 message 由服务端给出（例如「当前口令不正确」
+  /// 「口令至少需要 8 个字符」），调用方应**原样**展示。
+  ///
+  /// 成功后本机必须立即换用新令牌：服务端已吊销该用户的全部会话
+  /// （含本机原来那个），继续用旧令牌会让下一次请求 401。
+  Future<void> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
+    final newToken = await _auth.changePassword(currentPassword, newPassword);
+    if (newToken.isEmpty) {
+      // 服务端契约保证返回令牌。真为空说明契约被破坏 ——
+      // 明确报错而不是默默沿用旧令牌（那会让用户下一步被登出且不知原因）。
+      throw const ApiException(
+        code: 'internal',
+        message: '服务端未返回新令牌，请重新登录',
+      );
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, newToken);
+    _client.token = newToken;
+    // 用户资料未变，只换令牌
+    state = state.copyWith(token: newToken);
+  }
+
   /// 刷新公开配置（管理员改开关后调用）。
   Future<void> refreshPublicSettings() async {
     try {

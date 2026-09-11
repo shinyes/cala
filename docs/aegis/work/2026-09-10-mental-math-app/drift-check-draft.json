@@ -3,11 +3,11 @@
   "taskId": "2026-09-10-mental-math-app",
   "taskIntentRef": "docs/aegis/work/2026-09-10-mental-math-app/task-intent-draft.json",
   "baselineRefs": [],
-  "scopeStatus": "status: v0.0.4 交付, 内容为用户明确要求的两项(compose 升版 + 发布新版)加此前已确认的收窄与版本号功能。无范围外扩张",
-  "compatStatus": "status: 答案域收窄仅发生在 service 层产品校验, scoring 判分契约未变(历史信封与错题重练不受影响); APK versionCode 递增保证可覆盖安装; 客户端对不返回 version 的旧服务端保持兼容",
-  "retirementStatus": "status: 退役项 = 键盘分数键、文本答案与分数形式答案这两类作者能力、以及 scoring 中建议改用文本答案的提示。均有记录与理由",
+  "scopeStatus": "status: 用户明确要求的新功能, 无范围外扩张(未做邮箱找回、未做管理员重置他人口令等未要求的能力)",
+  "compatStatus": "status: 未改动任何既有端点契约; 新增端点不影响客户端兼容(旧客户端不会调用它); 改密后会话轮换是新增行为, 仅影响调用该端点的客户端",
+  "retirementStatus": "status: 无退役项。新增一处事务与一个 store 方法, 无回退路径、无重复实现",
   "newRiskSignals": [
-    "作者若做出无限循环小数答案(如 1/3)须靠容差; 已在编辑器提示、报错消息与规格三处说明。真机验证仍未做"
+    "改密端点未做速率限制(需要已认证会话才可调用, 风险低于登录); 管理员重置他人口令未在范围内; 真机验证仍未做"
   ],
   "decision": "continue"
 }

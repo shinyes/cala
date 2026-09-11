@@ -401,3 +401,24 @@
 - New risk signals:
 - 作者若做出无限循环小数答案(如 1/3)须靠容差; 已在编辑器提示、报错消息与规格三处说明。真机验证仍未做
 - Advisory decision: continue
+
+## DriftCheckDraft
+
+- Scope status: status: 用户明确要求的新功能, 无范围外扩张(未做邮箱找回、未做管理员重置他人口令等未要求的能力)
+- Compatibility status: status: 未改动任何既有端点契约; 新增端点不影响客户端兼容(旧客户端不会调用它); 改密后会话轮换是新增行为, 仅影响调用该端点的客户端
+- Retirement status: status: 无退役项。新增一处事务与一个 store 方法, 无回退路径、无重复实现
+- New risk signals:
+- 改密端点未做速率限制(需要已认证会话才可调用, 风险低于登录); 管理员重置他人口令未在范围内; 真机验证仍未做
+- Advisory decision: continue
+
+## Checkpoint Update
+
+- Current todo: 改密功能完成
+- Active slice: 交付
+- Completed todos:
+- 规格 §7 补充 /auth/password 契约与状态码约定
+- 修改口令: store 原子操作 + service + API + 前端页面
+- Evidence refs:
+- §6.9
+- Blocked on: 无
+- Next step: 如需可发布 v0.0.5

@@ -38,6 +38,26 @@ class AuthApi {
 
   Future<void> logout() => _c.post('/api/auth/logout');
 
+  /// 修改当前用户的口令，返回**新**会话令牌。
+  ///
+  /// 服务端在改密成功后会吊销该用户的**全部**会话（含本机原来那个），
+  /// 并为当前设备签发新令牌。调用方**必须**用返回值替换本地保存的令牌，
+  /// 否则下一次请求就会 401，用户会被莫名弹回登录页 ——
+  /// 而改密的人本来是想留在登录状态里的。
+  ///
+  /// 校验规则（口令长度、新旧是否相同）的 owner 是服务端，
+  /// 因此这里不做本地判断，只把服务端的错误消息原样交给界面展示。
+  Future<String> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
+    final j = await _c.post('/api/auth/password', {
+      'currentPassword': currentPassword,
+      'newPassword': newPassword,
+    });
+    return j['token'] as String? ?? '';
+  }
+
   Future<User> me() async {
     final j = await _c.get('/api/me');
     return User.fromJson((j['user'] as Map<String, dynamic>?) ?? const {});

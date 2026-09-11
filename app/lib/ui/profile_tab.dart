@@ -7,6 +7,7 @@ import '../state/projects.dart';
 import '../state/server_address.dart';
 import '../state/session.dart';
 import '../state/subscriptions.dart';
+import 'change_password_page.dart';
 import 'project_editor_page.dart';
 import 'server_address_page.dart';
 import 'share_page.dart';
@@ -36,6 +37,17 @@ class ProfileTab extends ConsumerWidget {
           children: [
             const SizedBox(height: 8),
             _AccountTile(user: user),
+
+            CupertinoListTile(
+              leading: const Icon(CupertinoIcons.lock),
+              title: const Text('修改口令'),
+              trailing: const CupertinoListTileChevron(),
+              onTap: () => Navigator.of(context).push(
+                CupertinoPageRoute<void>(
+                  builder: (_) => const ChangePasswordPage(),
+                ),
+              ),
+            ),
 
             if (user?.isAdmin ?? false) ...[
               const _SectionHeader('管理员'),
