@@ -210,21 +210,56 @@ YAML 校验输出：
 
 ---
 
-## 6. 未验证项（本机无法验证，需 CI 或用户确认）
+## 6. 未验证项
+
+> 本节在收尾后又关闭了两项，见 §6.1。
 
 | # | 项 | 原因 | 如何确认 |
 |---|---|---|---|
-| 1 | `ci.yml` 首跑是否通过 | 本环境不可达 github.com | 用户查看 Actions 页 |
+| 1 | ~~`ci.yml` 首跑是否通过~~ | ~~本环境不可达 github.com~~ | **已关闭**，见 §6.1 |
 | 2 | Docker 镜像能否构建 | 本机无 Docker | 打 tag 后看 release 工作流 |
-| 3 | `golang:1.26-alpine` / `distroless/static-debian12` tag 是否存在 | 无 Docker 且 Docker Hub 不可达（P-R6） | 同上；若不存在会立即显眼失败，修复仅改字符串 |
-| 4 | ghcr 推送是否成功 | 需 CI 与 `GITHUB_TOKEN` | 同上 |
+| 3 | ~~基础镜像 tag 是否存在~~ | ~~无 Docker 且 Docker Hub 不可达~~ | **已关闭**，见 §6.1 |
+| 4 | ghcr 推送是否成功 | 需 CI 与 `GITHUB_TOKEN` | 打 tag 后看 release 工作流 |
 | 5 | `gh release create` 能否创建 Release | 需 CI | 同上 |
 | 6 | 用户真实 keystore 的格式与口令是否与 secret 一致 | 不应读取密钥值 | preflight 的 `keytool -list -alias` 会明确报错 |
 | 7 | APK 能否覆盖安装升级旧版本 | 需真机与旧版本 APK | 用户实际安装时 |
-| 8 | `subosito/flutter-action@v2` + Flutter 3.44.9 组合 | 需 CI | 同上 |
+| 8 | ~~`subosito/flutter-action@v2` + Flutter 3.44.9 组合~~ | ~~需 CI~~ | **已关闭**，见 §6.1 |
 
-> 第 1–5、8 项都属于「一旦有误会立即且显眼地失败」的类型，
-> 修复代价通常是改一个字符串或一行配置。因此不为它们引入额外的本地验证机制。
+### 6.1 收尾后关闭的两项
+
+**(a) `ci.yml` 持续通过 —— 用户报告**
+
+用户确认 CI 一直正常。**证据等级说明**：这是用户报告而非我直接观察
+（本环境不可达 github.com，我从未看到过 Actions 页面）。因此记为
+「用户报告的事实」，而非「已验证」。
+
+由此关闭的连带项：第 8 项（`subosito/flutter-action@v2` + `flutter-version: '3.44.9'`
+组合可用）也随之确认 —— `ci.yml` 的 frontend job 用的正是这一组合。
+后端 job 的 `actions/setup-go@v5` + `go-version-file: backend/go.mod`
+同样被确认，即 **Go 1.26.0 确实已发布且可被 setup-go 解析**。
+
+**(b) 两个基础镜像 tag 均存在 —— 本次实际查询确认**
+
+P-R6 原先记为「无法本地验证，若无会由 CI 立即显眼失败」。收尾时发现本环境
+**能访问 Docker Hub 的国内镜像**（虽然 `hub.docker.com` 与 `registry-1.docker.io`
+不可达，但 `docker.m.daocloud.io` 可达），于是直接查询了 manifest：
+
+```
+golang:1.26-alpine                        -> HTTP 200  存在
+distroless/static-debian12:nonroot        -> HTTP 200  存在
+distroless/static-debian12:latest         -> HTTP 200  存在
+```
+
+查询方式：Docker Registry v2 API，经 `WWW-Authenticate` 头取 realm 后走匿名
+token 流程（`scope=repository:<repo>:pull`），再带 Bearer token 请求 manifest。
+
+**这项原先是「假设」，现在是「已核实的事实」。** 这是本阶段唯一一次把
+「无法验证」真正转成「已验证」的机会，值得单独记录 ——
+原先我对它的判断是「一旦有误会立即失败」，但能验证就不该停留在判断。
+
+**因此 release.yml 中「外部引用是否有效」这一整类风险已清除**；
+剩余的第 2、4、5 项都是**工作流自身的执行逻辑**（Docker 构建、推送、创建 Release），
+不再是外部依赖问题。
 
 ---
 

@@ -785,7 +785,7 @@ go build -trimpath -ldflags="-s -w" -o $env:TEMP\cala-linux ./cmd/server
 | R-P7-2 | keystore 或口令入库 | `.gitignore` + preflight 里 `git ls-files` 断言；已入库则明确要求更换 |
 | R-P7-3 | base64 带换行/header 导致解码失败 | preflight 与 APK job 都先 `tr -d ' \t\r\n'`；preflight 还会用 keytool 试开 |
 | R-P7-4 | secret 缺失导致晦涩失败 | preflight 集中校验并**报出缺哪个** |
-| R-P7-5 | `golang:1.26-alpine` 或 distroless tag 不存在 | 无法本地验证（P-R6）；CI 会立即显眼失败，修复代价仅改字符串 |
+| R-P7-5 | `golang:1.26-alpine` 或 distroless tag 不存在 | ~~无法本地验证（P-R6）~~ → **收尾时已实际核实两者均存在**，见 evidence/p7 §6.1 |
 | R-P7-6 | versionCode 不单调导致无法覆盖升级 | 由 tag 推导：`major*1e6 + minor*1e3 + patch`，天然单调 |
 | R-P7-7 | tag 打在未过 CI 的提交上 | release.yml 自带 test job（含跨端语料门禁） |
 | R-P7-8 | 本机无 Docker，镜像无法本地验证 | **如实记录为未验证**，不宣称已验证 |
