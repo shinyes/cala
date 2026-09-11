@@ -15,6 +15,7 @@ import (
 	"github.com/shinyes/cala/backend/internal/config"
 	"github.com/shinyes/cala/backend/internal/service"
 	"github.com/shinyes/cala/backend/internal/store"
+	"github.com/shinyes/cala/backend/internal/version"
 )
 
 // newTestApp 构建一个使用临时数据库的完整路由。
@@ -114,6 +115,50 @@ func TestHealthz(t *testing.T) {
 	}
 	if body["status"] != "ok" {
 		t.Errorf("status = %v, 期望 ok", body["status"])
+	}
+}
+
+// TestHealthzReportsVersion 确认探活端点自报版本号。
+//
+// 为何要测：版本号是经链接器 -X 注入的，**注入失败是静默的** ——
+// 二进制照常构建、照常运行，只是自报 "dev"。
+// 单元测试只能覆盖「字段存在且等于 version.Version」，
+// 真正的端到端一致性（注入值 == tag）由 release.yml 的 smoke job 断言。
+//
+// 这里同时钉住一条契约：字段必须叫 version 且为字符串。
+// 客户端与 smoke job 都按此名读取。
+func TestHealthzReportsVersion(t *testing.T) {
+	app := newTestApp(t, true)
+	status, body := do(t, app, http.MethodGet, "/api/healthz", "", "")
+	if status != http.StatusOK {
+		t.Fatalf("健康检查应返回 200, 得到 %d", status)
+	}
+
+	got, ok := body["version"]
+	if !ok {
+		t.Fatal("healthz 响应缺少 version 字段")
+	}
+	s, ok := got.(string)
+	if !ok {
+		t.Fatalf("version 应为字符串, 得到 %T", got)
+	}
+	if s == "" {
+		t.Error("version 不应为空（未注入时应为 dev，而不是空串）")
+	}
+	if s != version.Version {
+		t.Errorf("version = %q, 期望 %q（应与 version.Version 一致）", s, version.Version)
+	}
+}
+
+// TestVersionDefaultIsDev 锁定未注入时的默认值。
+//
+// 默认值必须是 "dev"：本地 go build 出来的二进制应当自报「开发构建」，
+// 既不伪装成某个发布版本，也不显示为空白。
+// 若有人把默认值改成空串或改成某个具体版本号，这条测试会失败。
+func TestVersionDefaultIsDev(t *testing.T) {
+	if version.Version != "dev" {
+		t.Errorf("测试构建下 version.Version = %q, 期望 dev"+
+			"（若为具体版本号，说明测试二进制被注入了版本，本断言需相应调整）", version.Version)
 	}
 }
 

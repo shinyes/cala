@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "p7-image-version",
+  "type": "test",
+  "source": "本机实测四条版本路径(含坏 DB 路径下的 --version) + 真实服务端契约验证 + 新增 10 项测试",
+  "summary": "用户要求镜像也要有版本号。核实: 镜像 tag 一直有版本号, 但镜像内部二进制完全没有版本信息(/api/healthz 只返回 status), 而 APK 内部是有真实版本号的(经 --build-name 注入)—— 这个不对称正是「也」字的由来。tag 是仓库侧元数据, 经 save/load 搬运或重新打标签后即与内容无关, 故版本号必须写进镜像。实现: internal/version.Version 默认 dev, 经 Dockerfile ARG VERSION + ldflags -X 注入; 四条读取路径(--version 子命令 / healthz 字段 / OCI 标签 / 启动日志)。刻意决定: --version 在处理配置与数据库之前(实测坏 DB 路径下仍返回 0.0.4 且 exit 0, 因为 distroless 无 shell 只能从外部调用, 若需连库才能回答则在最需要确认版本的场景里反而用不了); 默认值 dev 而非空串; 输出只有版本号本身; 版本号单独成包使 api 不依赖 main; 不做版本比较(用途是标识不是判断)。流水线新增 smoke 断言: tag/OCI 标签/服务端自报/--version 四者一致 —— 针对静默失败(ARG 名或 -X 路径写错、build-args 未传, 镜像都照常构建推送只是自报 dev)。客户端设置页测试连接顺带显示版本, 兼容旧服务端(7 项单测覆盖, 含类型异常不抛异常), 因此抽成纯函数而非内联 setState",
+  "verifier": "本机真实运行 + curl + App 解析函数对真实响应 + 后端/前端全量测试"
+}

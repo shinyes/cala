@@ -368,3 +368,15 @@
 - §6.6; ADR-0007
 - Blocked on: 无
 - Next step: 打 v0.0.4 tag
+
+## Checkpoint Update
+
+- Current todo: 版本号功能完成; v0.0.4 待发布
+- Active slice: 发布 v0.0.4
+- Completed todos:
+- 镜像内置版本号(四条读取路径 + 流水线四重一致断言)
+- 键盘 0 与负号互换位置
+- Evidence refs:
+- §6.7
+- Blocked on: 无
+- Next step: 打 v0.0.4 tag; compose 的 image 标签同升

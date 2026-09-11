@@ -2,12 +2,10 @@
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
   "lastCheckpointRef": "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json",
-  "resumeInstruction": "读 evidence/p7/ACCEPTANCE.md §6.6; 真机验证仍未做",
+  "resumeInstruction": "读 evidence/p7/ACCEPTANCE.md §6; 真机验证仍未做",
   "knownPartialWork": [
-    "键盘字母表收敛为 0-9 . -",
-    "答案域收窄: 拒绝文本答案与分数形式(ADR-0007 含修订)",
-    "修掉收窄引入的死提示(scoring 建议改用文本)",
-    "规格/基线/证据/ADR 同步"
+    "镜像内置版本号(四条读取路径 + 流水线四重一致断言)",
+    "键盘 0 与负号互换位置"
   ],
   "mustReadBeforeContinuing": [
     "docs/aegis/work/2026-09-10-mental-math-app/10-intent.md",

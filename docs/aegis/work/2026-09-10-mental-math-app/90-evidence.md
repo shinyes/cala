@@ -129,3 +129,11 @@ No evidence has been recorded yet.
 - Source: 真实 HTTP 复验(5 种分数形态全部 400, 4 种整数小数全部 201) + 新增 3 项测试 + 语料门禁通过
 - Summary: 产品要求收窄为「答案只需整数或小数」, 分数形式(如 a=1/2)在保存期与开轮时均被拒绝。与文本答案同源: 键盘没有除号, 分数形式里无限循环小数(如 1/3)永远敲不出来须靠容差 —— 那正是上一节刚记录的坑; 收窄后「作者写的答案一定能用键盘原样敲出」无条件成立。关键判据: 不能靠信封区分分数与小数(0.5 -> num=5 den=10, 1/2 -> num=1 den=2, 数值相等形状不同), 故取清洗后原始字面量是否含除号(Clean 后判断可覆盖全角斜杠)。刻意区分两类失败: 1/2 是合法但不允许的形式(提示改写小数), 1/0 与 1 空格 / 空格 2 是笔误(按文法畸形, 提示检查写法)。顺带修掉一处由本次收窄引入的不一致: scoring 曾建议改用文本答案而文本此时已被拒绝, 照做会撞上第二道拒绝 —— 该建议已移除(scoring 保持产品无关)。兼容边界: scoring.Classify 与 ParseRational 继续接受分数(小数同以 num/den 落库, 故分数分支一条都不能少), 由 TestScoringStillClassifiesTextAndFraction 锁定, 并验证用户敲 0.5 对 1/2 与 0.5 都判对
 - Verifier: 真实 HTTP API 127.0.0.1:8090 + 后端 9 包测试 + 语料门禁
+
+## EvidenceBundleDraft
+
+- Artifact key: p7-image-version
+- Type: test
+- Source: 本机实测四条版本路径(含坏 DB 路径下的 --version) + 真实服务端契约验证 + 新增 10 项测试
+- Summary: 用户要求镜像也要有版本号。核实: 镜像 tag 一直有版本号, 但镜像内部二进制完全没有版本信息(/api/healthz 只返回 status), 而 APK 内部是有真实版本号的(经 --build-name 注入)—— 这个不对称正是「也」字的由来。tag 是仓库侧元数据, 经 save/load 搬运或重新打标签后即与内容无关, 故版本号必须写进镜像。实现: internal/version.Version 默认 dev, 经 Dockerfile ARG VERSION + ldflags -X 注入; 四条读取路径(--version 子命令 / healthz 字段 / OCI 标签 / 启动日志)。刻意决定: --version 在处理配置与数据库之前(实测坏 DB 路径下仍返回 0.0.4 且 exit 0, 因为 distroless 无 shell 只能从外部调用, 若需连库才能回答则在最需要确认版本的场景里反而用不了); 默认值 dev 而非空串; 输出只有版本号本身; 版本号单独成包使 api 不依赖 main; 不做版本比较(用途是标识不是判断)。流水线新增 smoke 断言: tag/OCI 标签/服务端自报/--version 四者一致 —— 针对静默失败(ARG 名或 -X 路径写错、build-args 未传, 镜像都照常构建推送只是自报 dev)。客户端设置页测试连接顺带显示版本, 兼容旧服务端(7 项单测覆盖, 含类型异常不抛异常), 因此抽成纯函数而非内联 setState
+- Verifier: 本机真实运行 + curl + App 解析函数对真实响应 + 后端/前端全量测试

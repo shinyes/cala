@@ -74,11 +74,7 @@ class _ServerAddressPageState extends ConsumerState<ServerAddressPage> {
     try {
       final res = await probe.get('/api/healthz');
       if (!mounted) return;
-      setState(() {
-        _ok = res['status'] == 'ok'
-            ? '连接成功，服务端正常'
-            : '已连上，但响应不符合预期：$res';
-      });
+      setState(() => _ok = describeHealthResponse(res));
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _error = '${e.message}\n（地址：$candidate）');
@@ -228,6 +224,25 @@ class _ServerAddressPageState extends ConsumerState<ServerAddressPage> {
       ),
     );
   }
+}
+
+/// 把 `/api/healthz` 的响应转成给用户看的成功文案。
+///
+/// 独立成纯函数（而不是内联在 setState 里）是为了能直接单测：
+/// 它有一条**兼容分支** —— 旧版本服务端不返回 `version` 字段，
+/// 那不是错误，只是没有这项信息，不能因此报「响应不符合预期」。
+///
+/// 显示版本号的用途：这页要回答「我连的是哪个服务器」，
+/// 而版本是分辨服务器最直接的线索（尤其是自建了多台的情况）。
+String describeHealthResponse(Map<String, dynamic> res) {
+  if (res['status'] != 'ok') {
+    return '已连上，但响应不符合预期：$res';
+  }
+  final v = res['version'];
+  if (v is String && v.isNotEmpty) {
+    return '连接成功，服务端正常（版本 $v）';
+  }
+  return '连接成功，服务端正常（该服务端未提供版本号）';
 }
 
 class _Notice extends StatelessWidget {

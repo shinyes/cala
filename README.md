@@ -92,7 +92,8 @@ cd app && flutter analyze && flutter test
 1. 打开 App，在登录页底部点「服务器地址」
 2. 填入你部署的后端地址，例如 `192.168.1.5:8080`
    （可省略 `http://`；只需填到端口，不要带路径）
-3. 点「测试连接」确认能连上，再「保存」
+3. 点「测试连接」确认能连上 —— 成功时会**显示服务端版本号**，
+   可借此确认连的是哪一台。然后「保存」。
 
 手机与后端需在同一网络，且防火墙需放行该端口。
 
@@ -109,6 +110,28 @@ docker compose up -d
 
 首次启动后打开 `http://<主机>:8080` 注册 ——
 **第一个注册的用户会成为管理员**，随后建议在「我的」页关闭注册开关。
+
+### 查看当前运行的版本
+
+镜像的 tag 是仓库侧的元数据，搬运或重新打标签后可能失配，
+因此版本号**也写进了镜像内部**。三种查法：
+
+```bash
+# ① 直接问镜像（distroless 内没有 shell，故从外部调用子命令）
+docker run --rm ghcr.io/shinyes/cala:0.0.4 --version
+# -> 0.0.4
+
+# ② 问正在运行的服务
+curl http://localhost:8080/api/healthz
+# -> {"status":"ok","version":"0.0.4"}
+
+# ③ 问镜像的 OCI 标签
+docker inspect ghcr.io/shinyes/cala:0.0.4 \
+  --format '{{index .Config.Labels "org.opencontainers.image.version"}}'
+```
+
+容器启动日志的第一行也带版本。发布流水线会断言这三处与 tag **三者一致** ——
+版本注入失败是静默的（镜像照常构建成功，只是自报 `dev`），只有真的跑起来对比才发现。
 
 配置见 [`docker-compose.yml`](docker-compose.yml)（含环境变量说明、备份与恢复命令）。
 从源码自建镜像用 [`docker-compose.build.yml`](docker-compose.build.yml)。

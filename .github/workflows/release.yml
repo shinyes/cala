@@ -221,6 +221,11 @@ jobs:
             ${{ env.IMAGE }}:${{ needs.preflight.outputs.version }}
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:sha-${{ github.sha }}
+          # 把版本号注入二进制，让镜像能自报版本（tag 是外部元数据，可能失配）。
+          # smoke job 会断言两者一致。
+          build-args: |
+            VERSION=${{ needs.preflight.outputs.version }}
+            REVISION=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -420,6 +425,40 @@ jobs:
             docker logs cala-smoke || true
             exit 1
           fi
+
+      # 版本号必须**三重一致**：tag、镜像内的 OCI 标签、服务端自报。
+      #
+      # 这是本 job 存在的意义之一：构建期注入版本号是**静默失败**的典型 ——
+      # Dockerfile 里的 ARG 名写错、ldflags 路径写错、build-args 没传，
+      # 镜像都会照常构建成功、照常推送，只是自报 "dev"。
+      # 只有真的把它跑起来并对比，才能发现。
+      - name: 断言版本号三重一致（tag / OCI 标签 / 服务端自报）
+        run: |
+          set -euo pipefail
+          want="${{ needs.preflight.outputs.version }}"
+          img="${IMAGE}:${want}"
+
+          # ① 镜像内的 OCI 标签
+          label=$(docker inspect "$img" \
+            --format '{{index .Config.Labels "org.opencontainers.image.version"}}')
+          echo "tag=$want   镜像标签=$label"
+
+          # ② 服务端自报（经 /api/healthz）
+          health=$(curl -fsS http://127.0.0.1:18080/api/healthz)
+          echo "healthz=$health"
+          reported=$(printf '%s' "$health" | sed -n 's/.*"version":"\([^"]*\)".*/\1/p')
+          echo "服务端自报=$reported"
+
+          # ③ --version 子命令（distroless 内无 shell，只能从外部调用）
+          cli=$(docker run --rm "$img" --version)
+          echo "--version 输出=$cli"
+
+          fail=0
+          [ "$label" = "$want" ] || { echo "::error::OCI 标签版本($label)与 tag($want)不一致"; fail=1; }
+          [ "$reported" = "$want" ] || { echo "::error::服务端自报版本($reported)与 tag($want)不一致 —— 版本号未注入？"; fail=1; }
+          [ "$cli" = "$want" ] || { echo "::error::--version 输出($cli)与 tag($want)不一致"; fail=1; }
+          [ "$fail" = "0" ] || exit 1
+          echo "版本号三重一致：$want"
 
       - name: 验证 nonroot 能写入数据目录（注册首个用户）
         run: |
