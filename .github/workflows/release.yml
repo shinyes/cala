@@ -120,8 +120,15 @@ jobs:
 
           if ! keytool -list -keystore "$RUNNER_TEMP/preflight.jks" -storepass "$KS_PASS" \
                  -alias "$alias_trimmed" > /dev/null 2>&1; then
-            echo "::error::ANDROID_KEY_ALIAS='$alias_trimmed' 在 keystore 中不存在。"
-            echo "请把上面列出的别名之一填入该 secret（注意不要带多余空白）。"
+            # 把**实际存在的别名**放进 annotation，而不只是日志里。
+            # 理由：失败注解可在 Checks 界面直接看到，也能通过公开 API 读取，
+            # 无需翻构建日志（日志需要认证）。别名不是机密——签名需要同时具备
+            # keystore 文件与两个口令，仅知道别名没有任何用处；
+            # Android 官方文档与大量公开仓库都把别名当作非敏感信息。
+            # 这让「secret 填错」这类问题一次就能定位，而不必反复试错。
+            available="$(keytool -list -keystore "$RUNNER_TEMP/preflight.jks" -storepass "$KS_PASS" 2>/dev/null \
+              | grep -i 'PrivateKeyEntry' | sed 's/,.*//' | tr -d ' ' | tr '\n' ',' | sed 's/,$//' || true)"
+            echo "::error::ANDROID_KEY_ALIAS 在 keystore 中不存在。keystore 里实际可用的别名: ${available:-（未找到任何私钥条目）}"
             exit 1
           fi
           echo "别名 '$alias_trimmed' 校验通过"
@@ -273,19 +280,11 @@ jobs:
           test -s app/android/key.properties && echo "key.properties 已生成"
           test -s "$RUNNER_TEMP/release.jks" && echo "keystore 已就位"
 
-          # 这里是 preflight 之后的第二道防线：若别名或口令在此处失效
-          # （例如 preflight 与 apk job 之间 secret 被改动），
-          # 给出可读信息而不是让 Gradle 抛出难以理解的 keystore 异常。
-          if ! keytool -list -keystore "$RUNNER_TEMP/release.jks" \
-                 -storepass "$KS_PASS" -alias "$alias_trimmed" > /dev/null 2>&1; then
-            echo "::error::keystore 无法打开或别名 '$alias_trimmed' 不存在。"
-            echo "keystore 中的私钥条目别名："
-            keytool -list -keystore "$RUNNER_TEMP/release.jks" -storepass "$KS_PASS" 2>/dev/null \
-              | grep -i 'PrivateKeyEntry' | sed 's/,.*//' | sed 's/^/  /' \
-              || echo "  （未找到私钥条目）"
-            exit 1
-          fi
-          echo "keystore 与别名 '$alias_trimmed' 校验通过"
+          # 刻意**不**在此重复 preflight 的 keystore 校验。
+          # 校验的 owner 是 preflight 一处：先前把同一段校验写在这两个 job 里，
+          # 结果修「别名含空白」这个 bug 时要改两处 —— 那正是重复实现会漂移的信号。
+          # 本步骤只负责「转换」（写 key.properties）与「就位确认」。
+          echo "签名材料已就位（校验由 preflight 负责）"
 
       - name: 构建 release APK
         working-directory: app
