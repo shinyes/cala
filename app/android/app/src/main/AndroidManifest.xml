@@ -1,8 +1,27 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      INTERNET 权限必须写在 **main** 清单里。
+
+      Flutter 模板只在 src/debug 与 src/profile 的清单中声明该权限
+      （它们合并进调试/性能构建），因此 **release 构建默认没有联网权限**。
+      实测已发布的 0.0.2 APK：`aapt2 dump xmltree` 显示其权限列表里
+      只有内部的 DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION，没有 INTERNET ——
+      即 release 版 App 根本发不出任何网络请求。
+
+      这个缺陷之所以长期未被发现，是因为此前所有验证都在
+      debug 构建（浏览器调试 / debug APK）下进行，而 release APK
+      只验证过签名，从未真正运行过。
+
+      DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION 是 AndroidX 自动加入的
+      内部权限，与本条无关。
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="cala"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:networkSecurityConfig="@xml/network_security_config">
         <activity
             android:name=".MainActivity"
             android:exported="true"

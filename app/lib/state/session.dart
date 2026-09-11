@@ -12,9 +12,22 @@ import '../api/models.dart';
 /// 避免本地缓存与后端不一致（例如账号被禁用后本地仍显示已登录）。
 const _tokenKey = 'cala.token';
 
+/// 启动时的服务端地址。
+///
+/// 默认值只适合桌面/浏览器调试；`main()` 会用本地保存的地址覆盖它，
+/// 因此应用起来时地址已经确定，不存在「先用默认地址发一个请求」的竞态。
+///
+/// 放在本文件是因为它服务于 [apiClientProvider] 的构造；
+/// 运行期的地址变更由 `server_address.dart` 的 `serverAddressProvider` 负责。
+final initialServerUrlProvider =
+    Provider<String>((ref) => ApiClient.defaultBaseUrl());
+
 /// 全局 API 客户端。
+///
+/// 只创建一次。地址变更通过 `ApiClient.baseUrl` 就地修改（见其 setter 注释），
+/// 不重建实例 —— 重建会丢失 token，且各 API 包装器仍持有旧实例。
 final apiClientProvider = Provider<ApiClient>((ref) {
-  return ApiClient(baseUrl: ApiClient.defaultBaseUrl());
+  return ApiClient(baseUrl: ref.watch(initialServerUrlProvider));
 });
 
 /// 认证接口。
@@ -106,44 +119,58 @@ class SessionNotifier extends Notifier<SessionState> {
     }
 
     if (saved == null || saved.isEmpty) {
-      state = SessionState(
+      _applyRestored(SessionState(
         initialized: true,
         registrationOpen: regOpen,
         bootstrap: bootstrap,
-      );
+      ));
       return;
     }
 
     _client.token = saved;
     try {
       final user = await _auth.me();
-      state = SessionState(
+      _applyRestored(SessionState(
         initialized: true,
         token: saved,
         user: user,
         registrationOpen: regOpen,
         bootstrap: bootstrap,
-      );
+      ));
     } on ApiException catch (e) {
       if (e.isUnauthorized) {
         // 令牌失效：清除本地 token
         await prefs.remove(_tokenKey);
         _client.token = null;
-        state = SessionState(
+        _applyRestored(SessionState(
           initialized: true,
           registrationOpen: regOpen,
           bootstrap: bootstrap,
-        );
+        ));
         return;
       }
       // 网络等其它错误：保留 token，让用户重试而不是被迫重新登录
-      state = SessionState(
+      _applyRestored(SessionState(
         initialized: true,
         token: saved,
         registrationOpen: regOpen,
         bootstrap: bootstrap,
-      );
+      ));
     }
+  }
+
+  /// 应用恢复结果，但**不**覆盖在恢复期间已经建立的登录态。
+  ///
+  /// 恢复是异步的（要读存储并请求服务端），期间用户完全可能已经登录 ——
+  /// 例如启动后立刻注册。若此时照常写入恢复结果，就会把刚建立起来的
+  /// 登录态覆盖成「未登录」，表现为「注册成功后又被弹回登录页」。
+  ///
+  /// 同时跳过已销毁的情形：恢复的微任务可能在容器销毁之后才完成，
+  /// 此时写 state 会抛错。
+  void _applyRestored(SessionState restored) {
+    if (!ref.mounted) return;
+    if (state.isLoggedIn) return;
+    state = restored;
   }
 
   Future<void> _persist(String token, User user) async {
@@ -182,6 +209,23 @@ class SessionNotifier extends Notifier<SessionState> {
     _client.token = null;
     state = state.copyWith(clearToken: true, clearUser: true);
     // 登出后重新读取公开配置（可能已变化）
+    await refreshPublicSettings();
+  }
+
+  /// 清除本地登录态，**不调用后端**。
+  ///
+  /// 用于切换服务端地址：旧服务器的 token 对新服务器无效，
+  /// 而此刻旧服务器很可能正不可达（这常常正是用户切换地址的原因），
+  /// 因此不能依赖一次网络登出 —— 那会让切换卡住或残留登录态。
+  ///
+  /// 与 [logout] 的区别：[logout] 会尽力通知后端吊销会话，用于正常登出。
+  Future<void> forgetLocalSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+    _client.token = null;
+    // 重置为「未登录且已初始化」，并丢弃上一台服务器的公开配置 ——
+    // 注册开关是**每台服务器各自的**，沿用旧值会误导用户。
+    state = const SessionState(initialized: true);
     await refreshPublicSettings();
   }
 

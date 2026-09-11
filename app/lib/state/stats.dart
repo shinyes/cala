@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/stats_api.dart';
+import 'server_address.dart';
 import 'session.dart';
 
 /// 统计端点。
@@ -52,7 +53,12 @@ class StatsState {
 /// 刻意只做只读操作：统计 Tab 不提供任何编辑入口（规格 §4.3）。
 class StatsNotifier extends Notifier<StatsState> {
   @override
-  StatsState build() => const StatsState();
+  StatsState build() {
+    // 选中的项目 ID 属于某个 (服务器, 用户)：地址或令牌一变就必须丢弃，
+    // 否则会拿着旧服务器的项目 ID 去新服务器查询。
+    ref.watch(dataScopeProvider);
+    return const StatsState();
+  }
 
   StatsApi get _api => ref.read(statsApiProvider);
 

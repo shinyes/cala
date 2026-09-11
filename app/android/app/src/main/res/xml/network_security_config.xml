@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  网络安全配置。
+
+  为什么需要它：Cala 后端**只支持明文 HTTP**（Go 服务端未实现 TLS，
+  配置项里没有任何证书相关字段）。用户自建部署通常在局域网内以
+  http://192.168.x.x:8080 访问，因此明文必须放行，否则 App 完全无法连接。
+
+  Android 的默认行为是禁止明文：targetSdk >= 28 时
+  cleartextTrafficPermitted 默认为 false。本 APK 的 targetSdk 为 36，
+  因此**必须**显式放行，否则所有请求都会以
+  「Cleartext HTTP traffic to ... not permitted」失败。
+
+  这里用 networkSecurityConfig 而非 android:usesCleartextTraffic="true"：
+  两者效果等价，但前者是当前推荐做法，且留下按域名细化规则的余地
+  （例如日后某个自建域名配了 TLS，可在此单独要求 HTTPS）。
+
+  注：无法把放行范围限制为「私有网段」—— 该配置按域名匹配，不支持 IP 段。
+  而用户填写的地址是任意的，故只能整体放行。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

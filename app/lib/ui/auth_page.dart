@@ -2,7 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/client.dart';
+import '../state/server_address.dart';
 import '../state/session.dart';
+import 'server_address_page.dart';
 
 /// 登录与注册页。
 ///
@@ -90,6 +92,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider);
+    final serverUrl = ref.watch(serverAddressProvider);
 
     return CupertinoPageScaffold(
       navigationBar: const CupertinoNavigationBar(middle: Text('Cala')),
@@ -192,6 +195,45 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                   ),
                 ),
             ],
+
+            // 服务器地址入口。
+            //
+            // 必须放在登录页：连不上服务器时登录框本身是死的，
+            // 用户若无法在登录前改地址就彻底卡住。
+            // 手机端默认地址 127.0.0.1 指向手机自身，因此这条路一定会被用到。
+            const SizedBox(height: 28),
+            // 不用 Divider：它是 Material 组件，本项目为纯 Cupertino（D10）。
+            Container(height: 1, color: CupertinoColors.separator),
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              onPressed: _busy
+                  ? null
+                  : () => Navigator.of(context).push(
+                        CupertinoPageRoute<void>(
+                          builder: (_) => const ServerAddressPage(),
+                        ),
+                      ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(CupertinoIcons.cloud,
+                      size: 16, color: CupertinoColors.secondaryLabel),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      serverUrl,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: CupertinoColors.secondaryLabel,
+                      ),
+                    ),
+                  ),
+                  const Icon(CupertinoIcons.chevron_right,
+                      size: 13, color: CupertinoColors.tertiaryLabel),
+                ],
+              ),
+            ),
           ],
         ),
       ),

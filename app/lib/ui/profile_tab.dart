@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/client.dart';
 import '../api/models.dart';
 import '../state/projects.dart';
+import '../state/server_address.dart';
 import '../state/session.dart';
 import '../state/subscriptions.dart';
 import 'project_editor_page.dart';
+import 'server_address_page.dart';
 import 'share_page.dart';
 import 'shell.dart' show describeError;
 
@@ -24,6 +26,7 @@ class ProfileTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider);
     final projects = ref.watch(projectsProvider);
+    final serverUrl = ref.watch(serverAddressProvider);
     final user = session.user;
 
     return CupertinoPageScaffold(
@@ -75,6 +78,22 @@ class ProfileTab extends ConsumerWidget {
                   ),
                 ),
               ),
+
+            const _SectionHeader('服务器'),
+            CupertinoListTile(
+              leading: const Icon(CupertinoIcons.cloud),
+              title: const Text('服务端地址'),
+              subtitle: Text(
+                serverUrl,
+                style: const TextStyle(fontSize: 13),
+              ),
+              trailing: const CupertinoListTileChevron(),
+              onTap: () => Navigator.of(context).push(
+                CupertinoPageRoute<void>(
+                  builder: (_) => const ServerAddressPage(),
+                ),
+              ),
+            ),
 
             const SizedBox(height: 28),
             Padding(

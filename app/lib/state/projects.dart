@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/models.dart';
 import '../api/project_api.dart';
+import 'server_address.dart';
 import 'session.dart';
 
 /// 项目接口。
@@ -28,6 +29,9 @@ class ProjectsState {
 class ProjectsNotifier extends Notifier<ProjectsState> {
   @override
   ProjectsState build() {
+    // 项目数据属于某个 (服务器, 用户)：地址或令牌一变就必须整体作废，
+    // 否则会显示出上一台服务器或上一个账号的项目。
+    ref.watch(dataScopeProvider);
     Future.microtask(refresh);
     return const ProjectsState(loading: true);
   }
@@ -38,8 +42,13 @@ class ProjectsNotifier extends Notifier<ProjectsState> {
     state = ProjectsState(loading: true, list: state.list);
     try {
       final list = await _api.list();
+      // 请求期间 provider 可能已被重建（例如用户切换了服务器或重新登录），
+      // 此时本实例已销毁，写入 state 会抛错。
+      // 丢弃这次结果是对的：它属于旧的作用域，新实例会自己重新拉取。
+      if (!ref.mounted) return;
       state = ProjectsState(list: list);
     } on Object catch (e) {
+      if (!ref.mounted) return;
       state = ProjectsState(list: state.list, error: '$e');
     }
   }

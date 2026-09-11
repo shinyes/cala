@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/subscription_api.dart';
 import 'projects.dart';
+import 'server_address.dart';
 import 'session.dart';
 
 /// 订阅与分享端点。
@@ -37,7 +38,12 @@ class SubscriptionState {
 /// 订阅动作。
 class SubscriptionNotifier extends Notifier<SubscriptionState> {
   @override
-  SubscriptionState build() => const SubscriptionState();
+  SubscriptionState build() {
+    // 导入结果属于某个 (服务器, 用户)：地址或令牌一变就作废，
+    // 避免把上一台服务器的导入结果显示在新服务器上。
+    ref.watch(dataScopeProvider);
+    return const SubscriptionState();
+  }
 
   SubscriptionApi get _api => ref.read(subscriptionApiProvider);
 

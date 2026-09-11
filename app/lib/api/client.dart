@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 
+import 'server_address.dart';
+
 /// 后端统一错误契约对应的异常。
 ///
 /// 后端返回 `{"error":{"code","message"}}`（P0.4 确立），
@@ -41,11 +43,29 @@ class ApiException implements Exception {
 class ApiClient {
   final Dio _dio;
 
+  String _baseUrl;
+
+  /// 当前服务端地址（不含末尾斜杠）。
+  String get baseUrl => _baseUrl;
+
+  /// 切换服务端地址。
+  ///
+  /// 设计说明：**就地修改**而不是重建 ApiClient。原因有两条：
+  ///   1. token 存在客户端实例上，重建会丢掉登录态；
+  ///   2. 所有 API 包装器（AuthApi / ProjectApi / StatsApi / ...）
+  ///      都持有同一个实例，重建后它们仍指向旧实例。
+  /// 就地修改对 Dio 是安全的：它按请求读取 `options.baseUrl`。
+  set baseUrl(String value) {
+    _baseUrl = value;
+    _dio.options.baseUrl = value;
+  }
+
   /// 当前令牌。由 state 层设置；为空则不注入 Authorization 头。
   String? token;
 
   ApiClient({required String baseUrl, Dio? dio})
-      : _dio = dio ?? Dio() {
+      : _dio = dio ?? Dio(),
+        _baseUrl = baseUrl {
     _dio.options
       ..baseUrl = baseUrl
       ..connectTimeout = const Duration(seconds: 10)
@@ -56,11 +76,15 @@ class ApiClient {
 
   /// 默认 baseUrl。
   ///
-  /// 浏览器调试时用 `--dart-define=CALA_API=http://127.0.0.1:8080` 覆盖。
-  /// 后端已按 D9 放行 localhost 开发来源（见 backend 的 CALA_DEV_CORS_ORIGINS）。
+  /// 这是桌面/浏览器调试用的地址（后端在本机）。
+  /// 真机上 127.0.0.1 指向手机自身，因此必须在设置里改为实际地址 ——
+  /// 见 `server_address.dart` 与设置页。
+  ///
+  /// 构建期可用 `--dart-define=CALA_API=http://host:8080` 覆盖默认值
+  /// （便于出定制包），运行时用户设置优先于它。
   static String defaultBaseUrl() {
     const fromEnv = String.fromEnvironment('CALA_API');
-    return fromEnv.isEmpty ? 'http://127.0.0.1:8080' : fromEnv;
+    return fromEnv.isEmpty ? defaultServerAddress : fromEnv;
   }
 
   Future<Map<String, dynamic>> get(String path) => _send('GET', path);
