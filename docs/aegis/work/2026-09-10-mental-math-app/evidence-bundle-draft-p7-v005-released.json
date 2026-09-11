@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "p7-v005-released",
+  "type": "release",
+  "source": "ghcr registry API 直读标签 + 镜像层解包核对 + Release 附件下载核对 + CI run #12",
+  "summary": "v0.0.5 发布成功(run #12, 提交 d61286e, 六个 job 全 success)。独立验证(针对已发布产物本身): ① 从 ghcr 直读镜像 OCI 标签 —— version=0.0.5, revision 与 tag 所指提交一致; ② 解包镜像层取出 /cala 二进制(20.23MB) —— 内嵌版本 0.0.5 存在, 且含本版新增的改密路由字符串 auth/password, 证明新端点在已发布产物中; ③ 下载 APK 核对 —— 大小与 SHA256 与 GitHub 记录逐字一致(e1c1dd64…), versionName=0.0.5, versionCode=5(递增, 可覆盖安装), INTERNET 权限与 networkSecurityConfig 均在(v0.0.3 修复的回归检查), 签名证书 SHA256 与 v0.0.1~v0.0.4 同一身份。compose 的 image 已同步升到 0.0.5。另记录一处检查方法的局限: 曾尝试在二进制里搜中文错误消息佐证改密端点, 结果为 false —— 那是检查方法问题(Go 以 UTF-8 存储, 而过滤器只留 ASCII), 不是镜像问题; 该端点行为已由 8 项 API 测试与 20 项真实 HTTP 端到端检查覆盖",
+  "verifier": "ghcr API + 镜像层解包 + aapt2/apksigner + GitHub Release API"
+}

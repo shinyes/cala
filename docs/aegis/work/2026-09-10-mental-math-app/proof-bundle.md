@@ -34,6 +34,7 @@ This proof bundle is an advisory Aegis Method Pack record. It does not determine
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-release-published.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-server-address.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-v004-released.json
+- docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-v005-released.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-spec-approved.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-sqlite-cascade-spike.json
 
