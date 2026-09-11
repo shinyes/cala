@@ -212,18 +212,18 @@ YAML 校验输出：
 
 ## 6. 未验证项
 
-> 本节在收尾后持续更新，见 §6.1（已关闭项）、§6.2（发布三轮迭代）、
-> §6.3（网络环境对推送的影响）。
+> 本节在收尾后持续更新，见 §6.1（已关闭项）、§6.2（首次发布的多轮迭代）、
+> §6.3（最终成功与独立验签）、§6.4（网络环境对推送的影响）。
 
 | # | 项 | 状态 |
 |---|---|---|
-| 1 | `ci.yml` 首跑是否通过 | ✅ **已关闭**（§6.1a，公开 API 直接观察到 12 次全部 success） |
-| 2 | Docker 镜像能否构建 | ✅ **已关闭**：run #1 的 Docker 镜像 job 成功构建并推送 ghcr（§6.2） |
+| 1 | `ci.yml` 首跑是否通过 | ✅ **已关闭**（§6.1a，公开 API 直接观察到 12+ 次全部 success） |
+| 2 | Docker 镜像能否构建 | ✅ **已关闭**：run #8 的 Docker 镜像 job 成功构建并推送 ghcr（§6.3） |
 | 3 | 基础镜像 tag 是否存在 | ✅ **已关闭**（§6.1b，实测 manifest HTTP 200） |
-| 4 | ghcr 推送是否成功 | ✅ **已关闭**：run #1「登录 ghcr.io」与「构建并推送」两步均 success（§6.2） |
-| 5 | `gh release create` 能否创建 Release | ⏳ **仍待验证**：三轮均因上游 APK 失败而跳过该 job（§6.2） |
-| 6 | 用户真实 keystore 的别名与 secret 是否一致 | ❌ **已定位不一致**：keystore 含 `cala` 与 `my-key-alias` 两个私钥条目，而 secret 与两者都不匹配（§6.2 第 3 轮）。需用户把 secret 设为 `cala` |
-| 7 | APK 能否覆盖安装升级旧版本 | ⏳ 需真机与旧版本 APK |
+| 4 | ghcr 推送是否成功 | ✅ **已关闭**：run #8「登录 ghcr.io」与「构建并推送」均 success（§6.3） |
+| 5 | `gh release create` 能否创建 Release | ✅ **已关闭**：run #8 创建 Release 成功，两个附件就位（§6.3） |
+| 6 | 用户真实 keystore 的别名与 secret 是否一致 | ✅ **已关闭**：用户修正 secret 后 preflight 通过（§6.3） |
+| 7 | APK 能否覆盖安装升级旧版本 | ⏳ 需真机与旧版本 APK（唯一剩余项） |
 | 8 | `subosito/flutter-action@v2` + Flutter 3.44.9 组合 | ✅ **已关闭**（§6.1a） |
 
 ### 6.1 收尾时关闭的两项
@@ -358,7 +358,73 @@ keystore 中的别名。**本设计明确拒绝**，理由有两条：
 （本项目自己的 `key.properties.example` 里也写着 `keyAlias=cala`）。
 收益是让「secret 填错」一次定位，不必反复试错——因此采纳，并在工作流中写明该判断。
 
-### 6.3 网络环境对推送的影响
+### 6.3 成功：run #34570826903（提交 c2ae8ac）—— A10 与 A15 达成
+
+用户把 `ANDROID_KEY_ALIAS` 修正为 `cala` 后，第 5 次触发**全流程通过**：
+
+| job | 结果 |
+|---|---|
+| Preflight | ✅ |
+| Test | ✅ |
+| Docker 镜像 | ✅ 构建 + 推送 ghcr + 导出 tar.gz + 上传 artifact |
+| **已签名 APK** | ✅ 构建 + **验签并断言非 debug 证书** + 上传 artifact |
+| 创建 Release | ✅ |
+
+**Release 已发布**：`https://github.com/shinyes/cala/releases/tag/v0.0.1`
+
+| 附件 | 大小 | GitHub 记录的 SHA-256 |
+|---|---|---|
+| `cala-0.0.1-linux-amd64.tar.gz` | 8,712,571 B | `8da305d7…` |
+| `cala-0.0.1.apk` | 52,931,115 B | `10f25fb7…` |
+
+#### 第 5 轮修的问题：`download-artifact` 把 buildx 的缓存条目也当成产物
+
+第 4 次触发（run #34569828481）时四个 job 全部成功，只有最后的「创建 Release」
+失败于 `actions/download-artifact@v4`：
+
+```
+Unable to download and extract artifact: Artifact download failed after 5 retries.
+```
+
+根因由 `runs/{id}/artifacts` 列表直接暴露 —— 该次运行的 artifact 有三项：
+
+```
+apk                                  26,755,376 B   <- 本工作流
+shinyes~cala~AHTO4N.dockerbuild          51,391 B   <- docker/build-push-action 的 GHA 缓存
+docker-image                          9,032,919 B   <- 本工作流
+```
+
+第三项是 `cache-to: type=gha` 创建的构建缓存条目，它以 artifact 形式出现在运行里。
+原先的写法是不带 `name` 的 `download-artifact`（即「下载全部」），
+于是它连带去取这个缓存 blob 并当作 zip 解压，必然失败。
+
+**修复**：改为两个显式指定 `name` 的下载步骤（`docker-image` 与 `apk`）。
+这也更符合意图 —— 只取自己要发布的产物，而不是「本次运行产生的一切」。
+构建缓存保留（它对加速有价值），只是不再被误当作发布产物。
+
+#### 独立验证（不依赖 CI 自述）
+
+CI 的验签步骤成功本身已说明问题，但我进一步做了**独立验证**：
+从 Release 页面下载已发布的 APK，在本机用 `apksigner` 亲自验签。
+
+```
+下载:              50.48 MB
+大小与 Release 记录: ✓ 一致（52,931,115 B）
+SHA-256 与记录:     ✓ 一致（10f25fb7…）
+apksigner verify:   Verifies
+  v2 scheme:        true
+  signers:          1
+  证书 DN:          CN=Unknown, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown, C=Unknown
+  非 debug 证书:     ✓
+```
+
+**关于证书 DN 全为 `Unknown`**：用户生成 keystore 时未填 distinguished name。
+**不影响任何功能**：Android 对侧载应用不校验 DN 内容；
+可覆盖升级取决于**签名密钥本身**而非 DN。故无需处理，仅记录以免日后困惑。
+
+**这使 A15 从「CI 自述通过」升级为「已发布的产物经独立验签确认」。**
+
+### 6.4 网络环境对推送的影响
 
 第 3 轮的推送一度全部失败：
 

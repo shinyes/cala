@@ -1,19 +1,16 @@
 {
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
-  "currentTodo": "全部阶段完成；等待用户在 GitHub Actions 页确认 CI/release 首跑",
+  "currentTodo": "项目全部完成；v0.0.1 已发布",
   "completedTodos": [
-    "P7.1 Android 正式签名配置(用一次性 keystore 真实构建并验签)",
-    "P7.2 release.yml(5 job, preflight 集中校验)",
-    "P7.3 本地等效验证(Linux 交叉编译 + YAML 结构校验)",
-    "P7.4 验收(A15 本地真实验证; A10 待 CI)",
-    "回填 5 份 ADR(规格 §12 承诺)"
+    "P7 验收: A10 与 A15 均已验证(CI 全流程通过 + 下载已发布 APK 独立验签)",
+    "v0.0.1 发布成功: ghcr 镜像 + tar.gz 附件 + 已签名 APK 附件"
   ],
-  "activeSlice": "全部阶段完成，进入项目收尾",
+  "activeSlice": "项目收尾（唯一剩余: 真机覆盖安装验证）",
   "evidenceRefs": [
-    "docs/aegis/work/2026-09-10-mental-math-app/evidence/p7/ACCEPTANCE.md"
+    "https://github.com/shinyes/cala/releases/tag/v0.0.1"
   ],
-  "blockedOn": "A10 需 CI 真实执行才能确认(本环境不可达 github.com 且无 Docker); 真机/浏览器人工交互未验证",
-  "nextStep": "用户在 Actions 页确认 ci.yml 首跑; 打一个 v0.0.1 tag 观察 release.yml; 确认 Release 附件含 .tar.gz 与 .apk",
+  "blockedOn": "无",
+  "nextStep": "交付总结；如需继续可做真机验证或功能增强",
   "updatedAt": "2026-09-10"
 }

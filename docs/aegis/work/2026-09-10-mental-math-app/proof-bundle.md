@@ -26,12 +26,13 @@ This proof bundle is an advisory Aegis Method Pack record. It does not determine
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p5-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p6-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-acceptance.json
+- docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-release-published.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-spec-approved.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-sqlite-cascade-spike.json
 
 ## Drift Check
 
-- Scope status: status: 规格 §16 的 P0-P7 全部交付，无范围外扩张；最终 10 个 Go 包 + 前端 4 层
-- Compatibility status: status: 八条架构不可协商项全部由测试守护(沙箱四配置/保存期校验/单一级联/统计派生/无浮点判分/清洗表单一owner/判分权威); 签名材料未入库
-- Retirement status: status: 退役项 = 模板默认的『release 用 debug 签名』已替换; kotlin.incremental 的退役触发条件已写明(pub cache 同盘后恢复); 变异测试代码已全部还原
-- Advisory decision: pause-for-user
+- Scope status: status: 规格 §16 的 P0-P7 全部交付并验证; 无范围外扩张
+- Compatibility status: status: 八条架构不可协商项全部由测试守护; 签名材料未入库; ci.yml 的语料门禁未削弱
+- Retirement status: status: 退役项 = 模板默认 debug 签名(已替换为正式签名)。variants/变异测试代码已全部还原
+- Advisory decision: continue

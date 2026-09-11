@@ -3,11 +3,11 @@
   "taskId": "2026-09-10-mental-math-app",
   "taskIntentRef": "docs/aegis/work/2026-09-10-mental-math-app/task-intent-draft.json",
   "baselineRefs": [],
-  "scopeStatus": "status: 规格 §16 的 P0-P7 全部交付，无范围外扩张；最终 10 个 Go 包 + 前端 4 层",
-  "compatStatus": "status: 八条架构不可协商项全部由测试守护(沙箱四配置/保存期校验/单一级联/统计派生/无浮点判分/清洗表单一owner/判分权威); 签名材料未入库",
-  "retirementStatus": "status: 退役项 = 模板默认的『release 用 debug 签名』已替换; kotlin.incremental 的退役触发条件已写明(pub cache 同盘后恢复); 变异测试代码已全部还原",
+  "scopeStatus": "status: 规格 §16 的 P0-P7 全部交付并验证; 无范围外扩张",
+  "compatStatus": "status: 八条架构不可协商项全部由测试守护; 签名材料未入库; ci.yml 的语料门禁未削弱",
+  "retirementStatus": "status: 退役项 = 模板默认 debug 签名(已替换为正式签名)。variants/变异测试代码已全部还原",
   "newRiskSignals": [
-    "A10 未验证(需 CI): Docker 镜像构建/ghcr 推送/release 创建/镜像 tag 存在性; 真机与浏览器人工交互未验证; 用户真实 keystore 与 secret 的一致性由 preflight 的 keytool 试开负责报错"
+    "唯一剩余未验证项: APK 能否在真机覆盖安装升级旧版本(需真机与旧版本)。其余外部依赖已全部核实"
   ],
-  "decision": "pause-for-user"
+  "decision": "continue"
 }

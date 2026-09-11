@@ -287,3 +287,24 @@
 - New risk signals:
 - A10 未验证(需 CI): Docker 镜像构建/ghcr 推送/release 创建/镜像 tag 存在性; 真机与浏览器人工交互未验证; 用户真实 keystore 与 secret 的一致性由 preflight 的 keytool 试开负责报错
 - Advisory decision: pause-for-user
+
+## Checkpoint Update
+
+- Current todo: 项目全部完成；v0.0.1 已发布
+- Active slice: 项目收尾（唯一剩余: 真机覆盖安装验证）
+- Completed todos:
+- P7 验收: A10 与 A15 均已验证(CI 全流程通过 + 下载已发布 APK 独立验签)
+- v0.0.1 发布成功: ghcr 镜像 + tar.gz 附件 + 已签名 APK 附件
+- Evidence refs:
+- https://github.com/shinyes/cala/releases/tag/v0.0.1
+- Blocked on: 无
+- Next step: 交付总结；如需继续可做真机验证或功能增强
+
+## DriftCheckDraft
+
+- Scope status: status: 规格 §16 的 P0-P7 全部交付并验证; 无范围外扩张
+- Compatibility status: status: 八条架构不可协商项全部由测试守护; 签名材料未入库; ci.yml 的语料门禁未削弱
+- Retirement status: status: 退役项 = 模板默认 debug 签名(已替换为正式签名)。variants/变异测试代码已全部还原
+- New risk signals:
+- 唯一剩余未验证项: APK 能否在真机覆盖安装升级旧版本(需真机与旧版本)。其余外部依赖已全部核实
+- Advisory decision: continue

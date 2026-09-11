@@ -89,3 +89,11 @@ No evidence has been recorded yet.
 - Source: 测试 keystore 真实构建 release APK + apksigner 验签 + Linux 交叉编译 + Dart YAML 结构校验
 - Summary: A15 本地真实验证通过: 用一次性 keystore 走完与 CI 相同的配置路径, apksigner 显示证书 DN=CN=Cala Test Signing(非 debug)。同时修复三个真实问题: P-R8 修复不彻底(环境变量到不了已在运行的进程, 改为 kotlin.incremental=false)、preflight 用 keytool 却未准备 JDK、未加引号的 heredoc 会二次展开口令。A10(tag 触发/ghcr/release 附件)工作流已交付且结构合法但需 CI 才能验证
 - Verifier: evidence/p7/ACCEPTANCE.md
+
+## EvidenceBundleDraft
+
+- Artifact key: p7-release-published
+- Type: release
+- Source: GitHub Actions run #34570826903 + 本机 apksigner 独立验签
+- Summary: A10/A15 已验证。Release v0.0.1 已发布, 附件 cala-0.0.1-linux-amd64.tar.gz(8.7MB) 与 cala-0.0.1.apk(50.5MB)。独立验证: 下载已发布 APK, 大小与 SHA-256 与 GitHub 记录一致, apksigner 验签通过(v2 scheme, 单签名者, 非 debug 证书)。证书 DN 全为 Unknown(生成时未填), 不影响功能与可升级性
+- Verifier: https://github.com/shinyes/cala/releases/tag/v0.0.1 + 本机 apksigner
