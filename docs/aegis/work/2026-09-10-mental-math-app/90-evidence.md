@@ -137,3 +137,11 @@ No evidence has been recorded yet.
 - Source: 本机实测四条版本路径(含坏 DB 路径下的 --version) + 真实服务端契约验证 + 新增 10 项测试
 - Summary: 用户要求镜像也要有版本号。核实: 镜像 tag 一直有版本号, 但镜像内部二进制完全没有版本信息(/api/healthz 只返回 status), 而 APK 内部是有真实版本号的(经 --build-name 注入)—— 这个不对称正是「也」字的由来。tag 是仓库侧元数据, 经 save/load 搬运或重新打标签后即与内容无关, 故版本号必须写进镜像。实现: internal/version.Version 默认 dev, 经 Dockerfile ARG VERSION + ldflags -X 注入; 四条读取路径(--version 子命令 / healthz 字段 / OCI 标签 / 启动日志)。刻意决定: --version 在处理配置与数据库之前(实测坏 DB 路径下仍返回 0.0.4 且 exit 0, 因为 distroless 无 shell 只能从外部调用, 若需连库才能回答则在最需要确认版本的场景里反而用不了); 默认值 dev 而非空串; 输出只有版本号本身; 版本号单独成包使 api 不依赖 main; 不做版本比较(用途是标识不是判断)。流水线新增 smoke 断言: tag/OCI 标签/服务端自报/--version 四者一致 —— 针对静默失败(ARG 名或 -X 路径写错、build-args 未传, 镜像都照常构建推送只是自报 dev)。客户端设置页测试连接顺带显示版本, 兼容旧服务端(7 项单测覆盖, 含类型异常不抛异常), 因此抽成纯函数而非内联 setState
 - Verifier: 本机真实运行 + curl + App 解析函数对真实响应 + 后端/前端全量测试
+
+## EvidenceBundleDraft
+
+- Artifact key: p7-v004-released
+- Type: release
+- Source: ghcr registry API 直读标签 + 镜像层解包核对二进制 + Release 附件下载核对 + CI run #34616231075
+- Summary: v0.0.4 发布成功(run #34616231075, 提交 b52cb6f, 六个 job 全 success, 含本轮新增的版本号三重一致断言)。独立验证(不依赖 CI 自述): ① 从 ghcr 直接读取已发布镜像的 OCI 标签 —— version=0.0.4, revision 与 tag 所指提交一致; ② **解包镜像层**取出 /cala 二进制, 确认内嵌字符串 0.0.4 存在(20.22MB ELF) —— 这条才是关键证据, 证明 ldflags 注入真的作用到已发布产物, 而非只是构建脚本参数写对了(若 ARG 名或 -X 路径写错, 镜像仍会构建成功且标签正确, 只有二进制里是 dev); ③ 下载 APK 核对: 大小/SHA256 与 GitHub 记录逐字一致, versionName=0.0.4, versionCode=4(比 v0.0.3 的 3 递增, 覆盖安装前提), INTERNET 权限与 networkSecurityConfig 均在(v0.0.3 修复的回归检查), 签名证书 SHA256 与 v0.0.1~v0.0.3 同一身份。compose 的 image 已同步升到 0.0.4
+- Verifier: ghcr API + 镜像层解包 + aapt2/apksigner + GitHub Release API

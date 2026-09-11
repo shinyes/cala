@@ -32,12 +32,13 @@ This proof bundle is an advisory Aegis Method Pack record. It does not determine
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-keypad-and-text-answer.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-release-published.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-server-address.json
+- docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-v004-released.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-spec-approved.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-sqlite-cascade-spike.json
 
 ## Drift Check
 
-- Scope status: status: 键盘字母表为用户明确要求的收窄; 答案域收窄为 ADR-0007。无范围外扩张
-- Compatibility status: status: scoring.Classify 保持接受文本(历史判分不受影响); 清洗表与判分仍接受 /; 分数答案仍合法。拒绝仅发生在 service 层产品校验
-- Retirement status: status: 退役项 = 键盘的 / 键与文本答案这一作者能力。均有记录与理由; 无遗留回退路径
+- Scope status: status: v0.0.4 交付, 内容为用户明确要求的两项(compose 升版 + 发布新版)加此前已确认的收窄与版本号功能。无范围外扩张
+- Compatibility status: status: 答案域收窄仅发生在 service 层产品校验, scoring 判分契约未变(历史信封与错题重练不受影响); APK versionCode 递增保证可覆盖安装; 客户端对不返回 version 的旧服务端保持兼容
+- Retirement status: status: 退役项 = 键盘分数键、文本答案与分数形式答案这两类作者能力、以及 scoring 中建议改用文本答案的提示。均有记录与理由
 - Advisory decision: continue

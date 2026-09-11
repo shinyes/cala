@@ -380,3 +380,24 @@
 - §6.7
 - Blocked on: 无
 - Next step: 打 v0.0.4 tag; compose 的 image 标签同升
+
+## Checkpoint Update
+
+- Current todo: v0.0.4 已发布并验证
+- Active slice: 交付
+- Completed todos:
+- compose image 升到 0.0.4
+- v0.0.4 发布 + 独立验证(镜像标签/二进制内嵌版本/APK 版本与签名)
+- Evidence refs:
+- §6.8
+- Blocked on: 无
+- Next step: 真机安装验证(联网 + 配置服务器地址 + 覆盖安装)
+
+## DriftCheckDraft
+
+- Scope status: status: v0.0.4 交付, 内容为用户明确要求的两项(compose 升版 + 发布新版)加此前已确认的收窄与版本号功能。无范围外扩张
+- Compatibility status: status: 答案域收窄仅发生在 service 层产品校验, scoring 判分契约未变(历史信封与错题重练不受影响); APK versionCode 递增保证可覆盖安装; 客户端对不返回 version 的旧服务端保持兼容
+- Retirement status: status: 退役项 = 键盘分数键、文本答案与分数形式答案这两类作者能力、以及 scoring 中建议改用文本答案的提示。均有记录与理由
+- New risk signals:
+- 作者若做出无限循环小数答案(如 1/3)须靠容差; 已在编辑器提示、报错消息与规格三处说明。真机验证仍未做
+- Advisory decision: continue

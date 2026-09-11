@@ -3,7 +3,7 @@
   "baselineRefs": [],
   "impactStatement": "docs/aegis/work/2026-09-10-mental-math-app/impact-statement-draft.json",
   "compatPlan": "Compatibility boundary not yet refined.",
-  "retirementPlan": "status: 退役项 = 键盘的 / 键与文本答案这一作者能力。均有记录与理由; 无遗留回退路径",
+  "retirementPlan": "status: 退役项 = 键盘分数键、文本答案与分数形式答案这两类作者能力、以及 scoring 中建议改用文本答案的提示。均有记录与理由",
   "evidenceBundle": [
     "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-goja-spike-output.json",
     "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p0-p1-acceptance.json",
@@ -20,6 +20,7 @@
     "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-keypad-and-text-answer.json",
     "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-release-published.json",
     "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-server-address.json",
+    "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-v004-released.json",
     "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-spec-approved.json",
     "docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-sqlite-cascade-spike.json"
   ]

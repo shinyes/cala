@@ -1,16 +1,16 @@
 {
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
-  "currentTodo": "版本号功能完成; v0.0.4 待发布",
+  "currentTodo": "v0.0.4 已发布并验证",
   "completedTodos": [
-    "镜像内置版本号(四条读取路径 + 流水线四重一致断言)",
-    "键盘 0 与负号互换位置"
+    "compose image 升到 0.0.4",
+    "v0.0.4 发布 + 独立验证(镜像标签/二进制内嵌版本/APK 版本与签名)"
   ],
-  "activeSlice": "发布 v0.0.4",
+  "activeSlice": "交付",
   "evidenceRefs": [
-    "§6.7"
+    "§6.8"
   ],
   "blockedOn": "无",
-  "nextStep": "打 v0.0.4 tag; compose 的 image 标签同升",
+  "nextStep": "真机安装验证(联网 + 配置服务器地址 + 覆盖安装)",
   "updatedAt": "2026-09-11"
 }

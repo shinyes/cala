@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "p7-v004-released",
+  "type": "release",
+  "source": "ghcr registry API 直读标签 + 镜像层解包核对二进制 + Release 附件下载核对 + CI run #34616231075",
+  "summary": "v0.0.4 发布成功(run #34616231075, 提交 b52cb6f, 六个 job 全 success, 含本轮新增的版本号三重一致断言)。独立验证(不依赖 CI 自述): ① 从 ghcr 直接读取已发布镜像的 OCI 标签 —— version=0.0.4, revision 与 tag 所指提交一致; ② **解包镜像层**取出 /cala 二进制, 确认内嵌字符串 0.0.4 存在(20.22MB ELF) —— 这条才是关键证据, 证明 ldflags 注入真的作用到已发布产物, 而非只是构建脚本参数写对了(若 ARG 名或 -X 路径写错, 镜像仍会构建成功且标签正确, 只有二进制里是 dev); ③ 下载 APK 核对: 大小/SHA256 与 GitHub 记录逐字一致, versionName=0.0.4, versionCode=4(比 v0.0.3 的 3 递增, 覆盖安装前提), INTERNET 权限与 networkSecurityConfig 均在(v0.0.3 修复的回归检查), 签名证书 SHA256 与 v0.0.1~v0.0.3 同一身份。compose 的 image 已同步升到 0.0.4",
+  "verifier": "ghcr API + 镜像层解包 + aapt2/apksigner + GitHub Release API"
+}
