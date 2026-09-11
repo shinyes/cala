@@ -105,3 +105,11 @@ No evidence has been recorded yet.
 - Source: 本机逐层解包 ghcr 镜像 + CI smoke job(run #34587246298) + config 单元测试变异验证
 - Summary: 应要求编写 compose 部署配置时，为写出准确配置而核实已发布镜像，发现两个真实缺陷并修复: (1) 镜像中不存在 /data 而容器以 nonroot 运行 -> 命名卷部署必然失败(unable to open database file, 实测 exit 1 硬失败)。已用 COPY --chown=65532 修复; 新增 smoke job 在真实 Docker 中验证, 并本机解包 0.0.2 确认 /data 属主为 65532。 (2) CALA_DEV_CORS_ORIGINS 显式设为空串不会关闭 CORS 而是回退到 localhost:3000, 与代码注释相反。已改用 os.LookupEnv; 新增回归测试并做变异验证(还原后测试如实失败并报出错误值)。v0.0.2 已发布
 - Verifier: CI run #34587246298 (6 job 全 success, smoke 8 步全通过) + 本机镜像解包
+
+## EvidenceBundleDraft
+
+- Artifact key: p7-server-address
+- Type: test
+- Source: 已发布 APK 的 aapt2 解包取证 + 本地 release APK 解包复核 + 两个真实后端的端到端验证 + 42 项新测试(含变异验证)
+- Summary: 新增手机端可配置服务端地址(ADR-0006)。实现中发现阻塞缺陷: release APK 缺少 INTERNET 权限(Flutter 只在 debug/profile 清单声明)且 targetSdk=36 禁止明文 HTTP, 即已发布版本无法发起任何网络请求。aapt2 取证确认。已修 main 清单 + networkSecurityConfig 放行明文, 并在新构建的 release APK 中复核生效。功能要点: 地址规范化(无 scheme/末尾斜杠/中间空白/裸 IPv6)、就地改 ApiClient.baseUrl 不重建(保 token)、单点写入且换服务器必清登录态、main() 启动前加载消除竞态、dataScopeProvider 使数据声明式作废、设置页含测试连接, 入口在登录页与我的 Tab。顺带修复 _restore 覆盖新登录态与异步写已销毁 notifier 两个真实缺陷。前端 159 项测试通过(原 117)
+- Verifier: flutter analyze/test + aapt2 + 真实 HTTP 双后端端到端

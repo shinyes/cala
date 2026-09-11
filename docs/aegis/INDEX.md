@@ -53,3 +53,5 @@ Entries are workspace records, not authoritative runtime decisions.
 | 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-acceptance.json | 2026-09-10-mental-math-app evidence p7-acceptance |
 | 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-release-published.json | 2026-09-10-mental-math-app evidence p7-release-published |
 | 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-deploy-defects.json | 2026-09-10-mental-math-app evidence p7-deploy-defects |
+| 2026-09-11 | adr | docs/aegis/adr/ADR-0006-server-address-and-cleartext.md | ADR-0006 - 服务端地址可配置与明文 HTTP 放行 |
+| 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-server-address.json | 2026-09-10-mental-math-app evidence p7-server-address |

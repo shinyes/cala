@@ -2,10 +2,11 @@
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
   "lastCheckpointRef": "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json",
-  "resumeInstruction": "读 evidence/p7/ACCEPTANCE.md §6; 仅剩真机覆盖安装未验",
+  "resumeInstruction": "读 evidence/p7/ACCEPTANCE.md §6; 真机覆盖安装仍未验",
   "knownPartialWork": [
-    "docker-compose 部署配置(部署/自建两份) + README 部署章节",
-    "修复镜像 /data 缺失与 CORS 空值语义两个缺陷, 并加 smoke 守护"
+    "手机端可配置服务端地址 + 修复 release APK 无 INTERNET 权限与明文限制",
+    "ADR-0006 记录该决策; 基线 §5.1/§7 同步",
+    "docker-compose.yml 升到 0.0.3"
   ],
   "mustReadBeforeContinuing": [
     "docs/aegis/work/2026-09-10-mental-math-app/10-intent.md",
@@ -13,6 +14,6 @@
     "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json"
   ],
   "unsafeToAssume": [
-    "APK 可在真机覆盖安装升级"
+    "APK 在真机上能联网(仅本地构建解包确认了权限, 未真机运行)"
   ]
 }

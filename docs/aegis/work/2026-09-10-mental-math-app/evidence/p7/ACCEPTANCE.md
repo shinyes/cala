@@ -214,7 +214,7 @@ YAML 校验输出：
 
 > 本节在收尾后持续更新，见 §6.1（已关闭项）、§6.2（首次发布的多轮迭代）、
 > §6.3（最终成功与独立验签）、§6.4（v0.0.2 修复的部署缺陷）、
-> §6.5（网络环境对推送的影响）。
+> §6.5（服务端地址可配置与 release APK 联网缺陷）、§6.6（网络环境对推送的影响）。
 
 | # | 项 | 状态 |
 |---|---|---|
@@ -521,7 +521,102 @@ func env(key, def string) string {
 理由：Cala 用迁移表按序升级 schema，跟随 `:latest` 可能在无预期的情况下应用一次迁移；
 固定版本让升级成为显式动作（改一行 -> pull -> up -d）。
 
-### 6.5 网络环境对推送的影响
+### 6.5 手机端可配置服务端地址；并发现 release APK 无法联网
+
+用户要求「手机端可配置服务端地址」。实现时发现一个**阻塞性缺陷**：
+已发布的 APK 根本无法发起网络请求 —— 若不修，该功能毫无意义。
+
+#### 阻塞缺陷：release APK 没有 INTERNET 权限，明文 HTTP 也被禁
+
+源码层面即已可确认：`app/src/main/AndroidManifest.xml` 中**没有任何
+`<uses-permission>`**，而 `src/debug` 与 `src/profile` 的清单里都有 INTERNET。
+Flutter 模板只在调试/性能构建中声明该权限。
+
+对**已发布的 0.0.2 APK** 执行 `aapt2 dump xmltree` 取证：
+
+```
+targetSdkVersion      = 36        <- >= 28，明文 HTTP 默认被禁
+INTERNET 权限         = 不存在
+usesCleartextTraffic  = 不存在
+networkSecurityConfig = 不存在
+```
+
+该 APK 声明的唯一权限是内部的 `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`。
+
+**为什么长期未被发现**：此前所有验证都在 debug 构建下进行
+（浏览器调试、debug APK），而 release APK 只验证过**签名**，
+从未真正运行过 —— 它恰好就是此前唯一被标为「未验证」的真机安装项。
+这说明「构建成功 + 签名正确」与「应用能工作」之间可以差得很远。
+
+**修复**（均写在 main 清单）：
+1. `<uses-permission android:name="android.permission.INTERNET" />`
+2. `android:networkSecurityConfig` 指向新增的 `network_security_config.xml`，
+   其中 `cleartextTrafficPermitted="true"`。
+
+必须放行明文：后端只支持 HTTP（Go 服务端未实现 TLS，配置项里没有任何
+证书相关字段），用户自建部署通常在局域网内以 `http://192.168.x.x:8080` 访问。
+无法把放行范围限制为私有网段 —— 该配置按域名匹配，不支持 IP 段。
+
+**验证**：本地构建 release APK 后解包确认：
+
+```
+INTERNET 权限          : 存在 ✓
+networkSecurityConfig  : 存在 ✓（资源已打包）
+targetSdk              : 36
+```
+
+（本地构建用 debug 密钥签名属正常：`key.properties` 不存在时的回退，
+CI 会用正式 keystore。）
+
+#### 功能设计
+
+详见 ADR-0006。要点与理由：
+
+- **规范化**（`app/lib/api/server_address.dart`，纯函数、不依赖 Flutter）：
+  处理用户真实会犯的手误 —— 无 scheme（`192.168.1.5:8080`）、末尾斜杠
+  （会让 Dio 拼出 `//api/...`）、粘贴带入的空白（**含夹在中间的空白与不可见
+  字符**，只 trim 两端会漏掉）、裸 IPv6（`::1` 需补方括号）。
+  带路径的地址被拒绝并说明原因，而不是拼出错误 URL 后报难懂的 404。
+- **就地修改 baseUrl，不重建 ApiClient**：token 存在实例上，且
+  AuthApi / ProjectApi / StatsApi / SubscriptionApi 都持有同一实例；
+  重建会丢登录态并让各包装器指向旧实例。
+- **单点写入**：`ServerAddressNotifier.set()` 一次完成持久化、应用到客户端、
+  清除登录态三件事。换服务器必然作废登录态，且**设为等价地址是空操作** ——
+  否则用户只是想「看一眼当前地址再保存」就会被登出。
+- **启动前加载**：`main()` 在 `runApp` 之前读取已保存地址，
+  避免登录态恢复先以默认地址发出请求。存储值非法时回退默认值，
+  不让坏掉的偏好设置把用户锁在应用外。
+- **数据自动作废**：新增 `dataScopeProvider`（服务器地址 + 令牌），
+  项目/统计/订阅 provider 在 `build()` 里 watch 它，地址或身份一变即重建。
+  声明式，因此新增数据 provider 时不会「忘记作废」。
+- **界面**：设置页含「测试连接」（探测 `/api/healthz`），把「地址错」与
+  「服务端故障」区分开；入口在登录页与「我的」Tab。
+  登录页的入口是必需的 —— 连不上服务器时登录框本身是死的。
+
+#### 顺带修复的两个真实缺陷（由新测试暴露）
+
+1. **`SessionNotifier._restore()` 会覆盖恢复期间已建立的登录态**：
+   恢复是异步的（读存储 + 请求服务端），期间用户完全可能已注册成功，
+   结果被恢复结果改回「未登录」，表现为「注册成功后又被弹回登录页」。
+   现跳过该情形，并加 `ref.mounted` 守卫。
+2. **异步加载可能在 provider 重建后才完成，向已销毁的 notifier 写 state 而抛错**：
+   `ProjectsNotifier.refresh()` 等。加了 `ref.mounted` 守卫并丢弃属于旧作用域的
+   结果。该路径因 provider 现随作用域重建而变得容易触发。
+
+#### 验证
+
+- 前端 `flutter analyze` 无问题；测试 **159 项全通过**（原 117，新增 42）
+- 新增测试：地址规范化 26 项 + 状态/持久化/数据作废 16 项
+- **变异验证**：移除 `ProjectsNotifier` 中的 `dataScopeProvider` watch 后，
+  两项「数据重建」测试如实失败；文件 SHA-256 与还原前一致
+- **真实 HTTP 端到端**：起两个真实后端（`127.0.0.1:18120` 与 `:18121`，
+  不同 DB），用真实 `ApiClient` 验证：
+  改地址后请求确实改道、两台服务器数据完全隔离（A 的账号在 B 上不存在，
+  反之亦然）、切回后数据仍在、错误端口给出可读错误
+- release APK 解包确认权限与明文配置生效
+- 后端未改动，9 包测试仍全通过
+
+### 6.6 网络环境对推送的影响
 
 第 3 轮的推送一度全部失败：
 

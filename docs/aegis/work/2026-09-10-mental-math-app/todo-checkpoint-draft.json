@@ -1,16 +1,17 @@
 {
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
-  "currentTodo": "v0.0.2 已发布; 部署配置完成",
+  "currentTodo": "v0.0.3 待发布",
   "completedTodos": [
-    "docker-compose 部署配置(部署/自建两份) + README 部署章节",
-    "修复镜像 /data 缺失与 CORS 空值语义两个缺陷, 并加 smoke 守护"
+    "手机端可配置服务端地址 + 修复 release APK 无 INTERNET 权限与明文限制",
+    "ADR-0006 记录该决策; 基线 §5.1/§7 同步",
+    "docker-compose.yml 升到 0.0.3"
   ],
-  "activeSlice": "交付总结",
+  "activeSlice": "发布 v0.0.3",
   "evidenceRefs": [
-    "§6.4"
+    "§6.5; ADR-0006"
   ],
   "blockedOn": "无",
-  "nextStep": "如需可做真机覆盖安装验证",
-  "updatedAt": "2026-09-10"
+  "nextStep": "打 v0.0.3 tag; 真机安装验证联网与服务器地址配置",
+  "updatedAt": "2026-09-11"
 }

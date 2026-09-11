@@ -320,3 +320,16 @@
 - §6.4
 - Blocked on: 无
 - Next step: 如需可做真机覆盖安装验证
+
+## Checkpoint Update
+
+- Current todo: v0.0.3 待发布
+- Active slice: 发布 v0.0.3
+- Completed todos:
+- 手机端可配置服务端地址 + 修复 release APK 无 INTERNET 权限与明文限制
+- ADR-0006 记录该决策; 基线 §5.1/§7 同步
+- docker-compose.yml 升到 0.0.3
+- Evidence refs:
+- §6.5; ADR-0006
+- Blocked on: 无
+- Next step: 打 v0.0.3 tag; 真机安装验证联网与服务器地址配置

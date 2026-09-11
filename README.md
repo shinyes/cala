@@ -2,7 +2,7 @@
 
 用于练习速算的自部署应用。前后端分离：Go + Fiber + SQLite 后端，Flutter（Android）前端。
 
-> **当前状态：设计阶段，零行产品代码。**
+> **当前状态：已实现并发布（v0.0.2）。**
 > 设计与验收标准见 [`docs/aegis/specs/2026-09-10-mental-math-app-design.md`](docs/aegis/specs/2026-09-10-mental-math-app-design.md)。
 > 本 README 不复述需求，以避免出现第二个需求事实源。
 
@@ -80,6 +80,24 @@ Kotlin 增量编译器在 flush 缓存时对源文件调用 `Path.relativize()`�
 cd backend && go test ./...
 cd app && flutter analyze && flutter test
 ```
+
+## 安装 Android 客户端
+
+从 [Releases](https://github.com/shinyes/cala/releases) 下载 `cala-<版本>.apk` 侧载安装
+（已用正式密钥签名）。
+
+**首次使用必须设置服务端地址**：手机上的 `127.0.0.1` 指向手机自身，
+默认地址只在电脑上调试时可用。
+
+1. 打开 App，在登录页底部点「服务器地址」
+2. 填入你部署的后端地址，例如 `192.168.1.5:8080`
+   （可省略 `http://`；只需填到端口，不要带路径）
+3. 点「测试连接」确认能连上，再「保存」
+
+手机与后端需在同一网络，且防火墙需放行该端口。
+
+> **换服务器会退出登录**，这是有意为之：登录令牌属于原服务器，
+> 带到新服务器只会得到一串 401。切换后需要重新登录。
 
 ## 部署后端
 
