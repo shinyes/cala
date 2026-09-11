@@ -212,26 +212,123 @@ YAML 校验输出：
 
 ## 6. 未验证项
 
-> 本节在收尾后又关闭了两项，见 §6.1。
+> 本节在收尾后持续更新，见 §6.1（已关闭项）、§6.2（发布三轮迭代）、
+> §6.3（网络环境对推送的影响）。
 
-| # | 项 | 原因 | 如何确认 |
-|---|---|---|---|
-| 1 | ~~`ci.yml` 首跑是否通过~~ | ~~本环境不可达 github.com~~ | **已关闭**，见 §6.1 |
-| 2 | Docker 镜像能否构建 | 本机无 Docker | 打 tag 后看 release 工作流 |
-| 3 | ~~基础镜像 tag 是否存在~~ | ~~无 Docker 且 Docker Hub 不可达~~ | **已关闭**，见 §6.1 |
-| 4 | ghcr 推送是否成功 | 需 CI 与 `GITHUB_TOKEN` | 打 tag 后看 release 工作流 |
-| 5 | `gh release create` 能否创建 Release | 需 CI | 同上 |
-| 6 | 用户真实 keystore 的格式与口令是否与 secret 一致 | 不应读取密钥值 | preflight 的 `keytool -list -alias` 会明确报错 |
-| 7 | APK 能否覆盖安装升级旧版本 | 需真机与旧版本 APK | 用户实际安装时 |
-| 8 | ~~`subosito/flutter-action@v2` + Flutter 3.44.9 组合~~ | ~~需 CI~~ | **已关闭**，见 §6.1 |
+| # | 项 | 状态 |
+|---|---|---|
+| 1 | `ci.yml` 首跑是否通过 | ✅ **已关闭**（§6.1a，公开 API 直接观察到 12 次全部 success） |
+| 2 | Docker 镜像能否构建 | ✅ **已关闭**：run #1 的 Docker 镜像 job 成功构建并推送 ghcr（§6.2） |
+| 3 | 基础镜像 tag 是否存在 | ✅ **已关闭**（§6.1b，实测 manifest HTTP 200） |
+| 4 | ghcr 推送是否成功 | ✅ **已关闭**：run #1「登录 ghcr.io」与「构建并推送」两步均 success（§6.2） |
+| 5 | `gh release create` 能否创建 Release | ⏳ **仍待验证**：三轮均因上游 APK 失败而跳过该 job（§6.2） |
+| 6 | 用户真实 keystore 的别名与 secret 是否一致 | ❌ **已定位不一致**：keystore 含 `cala` 与 `my-key-alias` 两个私钥条目，而 secret 与两者都不匹配（§6.2 第 3 轮）。需用户把 secret 设为 `cala` |
+| 7 | APK 能否覆盖安装升级旧版本 | ⏳ 需真机与旧版本 APK |
+| 8 | `subosito/flutter-action@v2` + Flutter 3.44.9 组合 | ✅ **已关闭**（§6.1a） |
 
-### 6.1 收尾后关闭的两项
+### 6.2 首次 tag 发布的三轮迭代（真实运行记录）
+
+仓库改为 public 后，发布流程的状态已可通过公开 API 直接观察（不再依赖用户转述）。
+`v0.0.1` 的发布经过三轮，每一轮都暴露了一个真实问题：
+
+#### 第 1 轮（run #34564664640，提交 142fef9）
+
+| job | 结果 |
+|---|---|
+| Preflight | ✅ |
+| Test | ✅ |
+| Docker 镜像 | ✅ **构建并推送 ghcr 成功**，导出 tar.gz 成功 |
+| **已签名 APK** | ❌ 失败于「解码 keystore 并生成 key.properties」 |
+| 创建 Release | ⏭️ 跳过 |
+
+失败信息是我自己加的那道检查报出的：`keystore 无法打开或别名不存在`。
+而同一提交下 Preflight 的 keystore 检查**通过**（它只用 `-storepass`，不带 `-alias`）。
+两者对比即可定位：**口令正确，是别名不匹配**。
+
+同时从注解中取得两条弃用警告（Node.js 20），据此**实测**了 action 的
+`runs.using` 字段（`actions/setup-java@v5` 与 `actions/checkout@v6` 均为 `node24`），
+将 `checkout@v4→v6`、`setup-java@v4→v5`。
+
+#### 第 2 轮（run #34566062017，提交 3cbc6ae）
+
+`Preflight` 失败，注解为：
+
+```
+ANDROID_KEY_ALIAS='***' 在 keystore 中不存在。
+```
+
+（`***` 是 GitHub 对 secret 的自动遮蔽。）
+
+**这一轮验证了前一轮所加诊断的价值**：问题在 **20 秒内**的 preflight 阶段被精确报出，
+并带上「ANDROID_KEY_ALIAS」这一明确指向，而不是等到装完 Flutter（约 4 分钟）
+才以晦涩的 Gradle keystore 异常失败。
+
+#### 第 3 轮（run #34567019284，提交 b243a99）
+
+把「keystore 中**实际存在**的别名」从日志移进失败注解后，一次拿到答案：
+
+```
+ANDROID_KEY_ALIAS 在 keystore 中不存在。keystore 里实际可用的别名: cala,my-key-alias
+```
+
+**该 keystore 含两个私钥条目**，而 secret 的值与两者都不匹配。
+
+#### 一个刻意的设计判断：不做别名自动回退
+
+面对「secret 填错但 keystore 里有可用别名」，一个自然的想法是自动选用
+keystore 中的别名。**本设计明确拒绝**，理由有两条：
+
+1. **别名在此处不唯一**（有 `cala` 与 `my-key-alias` 两个），自动选择是任意的。
+2. 更重要：**选择哪个密钥签名是一个持久且近乎不可逆的决定** ——
+   Android 要求升级包的签名与已安装版本一致，换密钥会导致已安装用户无法覆盖升级
+   （规格 §10.3 已记录该后果）。因此签名身份必须由**所有者有意选择**，
+   工具不应代为猜测。
+
+工具该做的是把事实摆清楚（列出可用别名），而不是替用户做这个决定。
+
+#### 关于把别名放进公开注解的信息披露判断
+
+仓库已改为 public，注解对外可见。把 keystore 中的别名列出，是否有安全影响？
+
+判断为**无实质影响**，理由：签名需要同时具备
+① keystore 文件、② store 口令、③ key 口令。别名单独存在没有任何用处，
+且 Android 官方文档与大量公开仓库都把别名视为非敏感信息
+（本项目自己的 `key.properties.example` 里也写着 `keyAlias=cala`）。
+收益是让「secret 填错」一次定位，不必反复试错——因此采纳，并在工作流中写明该判断。
+
+### 6.3 网络环境对推送的影响
+
+第 3 轮的推送一度全部失败：
+
+```
+fatal: unable to access 'https://github.com/shinyes/cala.git/':
+  schannel: failed to receive handshake, SSL/TLS connection failed
+```
+
+诊断结果：git 配置了本地代理 `http://127.0.0.1:7897`（clash-verge / verge-mihomo
+在运行且端口监听），但**代理的海外节点失效**——
+经代理访问 google / github / api.github.com 全部握手失败，而 baidu 正常
+（Clash 按规则把国内流量直连）。直连 github.com 亦失败。
+
+**绕行方案**：`github.com:22` 与 `ssh.github.com:443` 直连可达，且本机
+`~/.ssh/id_rsa` 已注册到 GitHub（实测 `Hi shinyes! You've successfully authenticated`）。
+因此改用 SSH 地址推送，**未修改用户既有的 `origin` 配置**（只对本次推送指定 SSH URL），
+以最小侵入方式解除阻塞。
+
+> 该绕行是环境层面的应对，不是项目配置的变更。若 HTTPS 代理恢复，现有
+> `origin` 仍可正常工作。
+
+### 6.1 收尾时关闭的两项
 
 **(a) `ci.yml` 持续通过 —— 用户报告**
 
 用户确认 CI 一直正常。**证据等级说明**：这是用户报告而非我直接观察
 （本环境不可达 github.com，我从未看到过 Actions 页面）。因此记为
 「用户报告的事实」，而非「已验证」。
+
+> **后续（仓库改为 public 后）**：已可通过公开 API 直接观察，不再依赖转述。
+> 截至最后一次查询，`CI` 工作流共 12 次运行**全部 success**（含 `checkout@v6`
+> 升级后的 run #12）——因此本项已从「用户报告」升级为**直接观察**。
 
 由此关闭的连带项：第 8 项（`subosito/flutter-action@v2` + `flutter-version: '3.44.9'`
 组合可用）也随之确认 —— `ci.yml` 的 frontend job 用的正是这一组合。
