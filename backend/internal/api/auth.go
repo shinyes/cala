@@ -103,11 +103,17 @@ func (h *Handlers) handleMe(c *fiber.Ctx) error {
 }
 
 func (h *Handlers) handlePublicSettings(c *fiber.Ctx) error {
-	open, err := h.Auth.RegistrationOpen()
+	canRegister, bootstrap, _, err := h.Auth.RegistrationStatus()
 	if err != nil {
 		return fail(c, fiber.StatusInternalServerError, CodeInternal, "读取配置失败")
 	}
-	return c.JSON(fiber.Map{"registrationOpen": open})
+	// registrationOpen 是**有效值**（已计入引导管理员规则），客户端只需据此
+	// 决定是否显示注册入口，不必自己组合判断——否则同一条规则会有两个 owner。
+	// bootstrap 为 true 时注册者将成为管理员，界面据此给出提示。
+	return c.JSON(fiber.Map{
+		"registrationOpen": canRegister,
+		"bootstrap":        bootstrap,
+	})
 }
 
 func (h *Handlers) handleSetSettings(c *fiber.Ctx) error {

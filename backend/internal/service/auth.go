@@ -134,6 +134,31 @@ func (s *AuthService) RegistrationOpen() (bool, error) {
 	return s.store.RegistrationOpen(s.regOpenDefault)
 }
 
+// RegistrationStatus 返回「现在是否允许新用户注册」的**有效值**。
+//
+// 为什么要由服务端算这个有效值、而不是让客户端自己组合：
+// 引导管理员规则（系统无用户时无视开关）是服务端的事实。若客户端自行实现
+// 「开关关闭但无用户时仍显示注册入口」，同一条规则就有了两个 owner，
+// 且客户端并不知道用户数——它只能猜。返回有效值使客户端只负责渲染。
+//
+// 返回：
+//   - canRegister：是否允许注册（已计入 bootstrap）
+//   - bootstrap：系统尚无用户，注册者将成为管理员
+//   - settingOpen：settings 表中的原始开关值（供管理员界面显示）
+func (s *AuthService) RegistrationStatus() (canRegister, bootstrap, settingOpen bool, err error) {
+	count, err := s.store.CountUsers()
+	if err != nil {
+		return false, false, false, err
+	}
+	settingOpen, err = s.store.RegistrationOpen(s.regOpenDefault)
+	if err != nil {
+		return false, false, false, err
+	}
+	bootstrap = count == 0
+	canRegister = bootstrap || settingOpen
+	return canRegister, bootstrap, settingOpen, nil
+}
+
 // SetRegistrationOpen 修改注册开关（仅管理员，权限判定在 API 层）。
 func (s *AuthService) SetRegistrationOpen(open bool) error {
 	return s.store.SetRegistrationOpen(open)

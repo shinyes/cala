@@ -347,6 +347,49 @@ func TestBadProjectIDReturns400(t *testing.T) {
 	}
 }
 
+// TestPublicSettingsReturnsEffectiveRegistrationValue 覆盖一个所有权决策：
+//
+// `/api/settings/public` 的 registrationOpen 是**有效值**——已计入
+// 「系统无用户时无视开关」的引导管理员规则（规格 §6.2）。
+//
+// 若返回原始开关值，客户端就得自己组合「开关为假但无用户时应允许注册」，
+// 而客户端并不知道用户数，只能猜——同一条规则于是有了两个 owner。
+func TestPublicSettingsReturnsEffectiveRegistrationValue(t *testing.T) {
+	t.Run("无用户时有效值为 true（可注册且为引导管理员）", func(t *testing.T) {
+		// 开关初值 false，模拟管理员关闭注册后的全新部署
+		app := newTestApp(t, false)
+
+		status, body := do(t, app, http.MethodGet, "/api/settings/public", "", "")
+		if status != http.StatusOK {
+			t.Fatalf("应返回 200, 得到 %d", status)
+		}
+		if open, _ := body["registrationOpen"].(bool); !open {
+			t.Error("系统无用户时有效值应为 true，否则全新部署无法注册")
+		}
+		if bootstrap, _ := body["bootstrap"].(bool); !bootstrap {
+			t.Error("系统无用户时 bootstrap 应为 true")
+		}
+	})
+
+	t.Run("已有用户且开关关闭时有效值为 false", func(t *testing.T) {
+		app := newTestApp(t, true)
+		adminToken := register(t, app, "admin", "password123")
+
+		if status, _ := do(t, app, http.MethodPut, "/api/admin/settings",
+			`{"open":false}`, adminToken); status != http.StatusOK {
+			t.Fatal("管理员关闭注册失败")
+		}
+
+		_, body := do(t, app, http.MethodGet, "/api/settings/public", "", "")
+		if open, _ := body["registrationOpen"].(bool); open {
+			t.Error("已有用户且开关关闭时有效值应为 false")
+		}
+		if bootstrap, _ := body["bootstrap"].(bool); bootstrap {
+			t.Error("已有用户时 bootstrap 应为 false")
+		}
+	})
+}
+
 // ---------------------------------------------------------------------------
 // 轮次
 // ---------------------------------------------------------------------------
