@@ -226,6 +226,47 @@ YAML 校验输出：
 | 7 | APK 能否覆盖安装升级旧版本 | ⏳ 需真机与旧版本 APK |
 | 8 | `subosito/flutter-action@v2` + Flutter 3.44.9 组合 | ✅ **已关闭**（§6.1a） |
 
+### 6.1 收尾时关闭的两项
+
+**(a) `ci.yml` 持续通过 —— 用户报告**
+
+用户确认 CI 一直正常。**证据等级说明**：这是用户报告而非我直接观察
+（本环境不可达 github.com，我从未看到过 Actions 页面）。因此记为
+「用户报告的事实」，而非「已验证」。
+
+> **后续（仓库改为 public 后）**：已可通过公开 API 直接观察，不再依赖转述。
+> 截至最后一次查询，`CI` 工作流共 12 次运行**全部 success**（含 `checkout@v6`
+> 升级后的 run #12）——因此本项已从「用户报告」升级为**直接观察**。
+
+由此关闭的连带项：第 8 项（`subosito/flutter-action@v2` + `flutter-version: '3.44.9'`
+组合可用）也随之确认 —— `ci.yml` 的 frontend job 用的正是这一组合。
+后端 job 的 `actions/setup-go@v5` + `go-version-file: backend/go.mod`
+同样被确认，即 **Go 1.26.0 确实已发布且可被 setup-go 解析**。
+
+**(b) 两个基础镜像 tag 均存在 —— 本次实际查询确认**
+
+P-R6 原先记为「无法本地验证，若无会由 CI 立即显眼失败」。收尾时发现本环境
+**能访问 Docker Hub 的国内镜像**（虽然 `hub.docker.com` 与 `registry-1.docker.io`
+不可达，但 `docker.m.daocloud.io` 可达），于是直接查询了 manifest：
+
+```
+golang:1.26-alpine                        -> HTTP 200  存在
+distroless/static-debian12:nonroot        -> HTTP 200  存在
+distroless/static-debian12:latest         -> HTTP 200  存在
+```
+
+查询方式：Docker Registry v2 API，经 `WWW-Authenticate` 头取 realm 后走匿名
+token 流程（`scope=repository:<repo>:pull`），再带 Bearer token 请求 manifest。
+
+**这项原先是「假设」，现在是「已核实的事实」。** 这是本阶段唯一一次把
+「无法验证」真正转成「已验证」的机会，值得单独记录 ——
+原先我对它的判断是「一旦有误会立即失败」，但能验证就不该停留在判断。
+
+**因此 release.yml 中「外部引用是否有效」这一整类风险已清除**；
+剩余的第 2、4、5 项都是**工作流自身的执行逻辑**（Docker 构建、推送、创建 Release），
+不再是外部依赖问题。
+
+
 ### 6.2 首次 tag 发布的三轮迭代（真实运行记录）
 
 仓库改为 public 后，发布流程的状态已可通过公开 API 直接观察（不再依赖用户转述）。
@@ -317,46 +358,6 @@ fatal: unable to access 'https://github.com/shinyes/cala.git/':
 
 > 该绕行是环境层面的应对，不是项目配置的变更。若 HTTPS 代理恢复，现有
 > `origin` 仍可正常工作。
-
-### 6.1 收尾时关闭的两项
-
-**(a) `ci.yml` 持续通过 —— 用户报告**
-
-用户确认 CI 一直正常。**证据等级说明**：这是用户报告而非我直接观察
-（本环境不可达 github.com，我从未看到过 Actions 页面）。因此记为
-「用户报告的事实」，而非「已验证」。
-
-> **后续（仓库改为 public 后）**：已可通过公开 API 直接观察，不再依赖转述。
-> 截至最后一次查询，`CI` 工作流共 12 次运行**全部 success**（含 `checkout@v6`
-> 升级后的 run #12）——因此本项已从「用户报告」升级为**直接观察**。
-
-由此关闭的连带项：第 8 项（`subosito/flutter-action@v2` + `flutter-version: '3.44.9'`
-组合可用）也随之确认 —— `ci.yml` 的 frontend job 用的正是这一组合。
-后端 job 的 `actions/setup-go@v5` + `go-version-file: backend/go.mod`
-同样被确认，即 **Go 1.26.0 确实已发布且可被 setup-go 解析**。
-
-**(b) 两个基础镜像 tag 均存在 —— 本次实际查询确认**
-
-P-R6 原先记为「无法本地验证，若无会由 CI 立即显眼失败」。收尾时发现本环境
-**能访问 Docker Hub 的国内镜像**（虽然 `hub.docker.com` 与 `registry-1.docker.io`
-不可达，但 `docker.m.daocloud.io` 可达），于是直接查询了 manifest：
-
-```
-golang:1.26-alpine                        -> HTTP 200  存在
-distroless/static-debian12:nonroot        -> HTTP 200  存在
-distroless/static-debian12:latest         -> HTTP 200  存在
-```
-
-查询方式：Docker Registry v2 API，经 `WWW-Authenticate` 头取 realm 后走匿名
-token 流程（`scope=repository:<repo>:pull`），再带 Bearer token 请求 manifest。
-
-**这项原先是「假设」，现在是「已核实的事实」。** 这是本阶段唯一一次把
-「无法验证」真正转成「已验证」的机会，值得单独记录 ——
-原先我对它的判断是「一旦有误会立即失败」，但能验证就不该停留在判断。
-
-**因此 release.yml 中「外部引用是否有效」这一整类风险已清除**；
-剩余的第 2、4、5 项都是**工作流自身的执行逻辑**（Docker 构建、推送、创建 Release），
-不再是外部依赖问题。
 
 ---
 
