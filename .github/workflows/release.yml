@@ -507,15 +507,21 @@ jobs:
             ${image}:${version}
           \`\`\`
 
-          > **若镜像是私有包**（仓库为私有仓库时 ghcr 包默认为私有），
-          > 上面的 \`docker pull\` 需要先登录：
+          > ghcr 包为**公开**，上面的 \`docker pull\` **无需登录**。
+          >
+          > 若日后把仓库改回私有（ghcr 包会随之变为私有），则需先登录：
           >
           > \`\`\`bash
           > echo "<你的 GitHub PAT，需 read:packages 权限>" | docker login ghcr.io -u <你的用户名> --password-stdin
           > \`\`\`
           >
-          > 想让任何人都能直接拉取，请在 GitHub 的
-          > Packages → cala → Package settings 中把可见性改为 Public。
+          > 或把包的可见性改为 Public：Packages → cala → Package settings。
+
+          生产部署建议直接用仓库里的 \`docker-compose.yml\`（含备份/恢复与升级说明）：
+
+          \`\`\`bash
+          docker compose up -d
+          \`\`\`
 
           首次启动后打开 http://localhost:8080 注册 —— **第一个注册的用户会成为管理员**。
           注册完成后建议在「我的」页关闭注册开关。

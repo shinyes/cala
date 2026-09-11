@@ -2,10 +2,10 @@
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
   "lastCheckpointRef": "docs/aegis/work/2026-09-10-mental-math-app/todo-checkpoint-draft.json",
-  "resumeInstruction": "读 evidence/p7/ACCEPTANCE.md 的 §6 未验证项表; 仅第 7 项(真机覆盖安装)待验",
+  "resumeInstruction": "读 evidence/p7/ACCEPTANCE.md §6; 仅剩真机覆盖安装未验",
   "knownPartialWork": [
-    "P7 验收: A10 与 A15 均已验证(CI 全流程通过 + 下载已发布 APK 独立验签)",
-    "v0.0.1 发布成功: ghcr 镜像 + tar.gz 附件 + 已签名 APK 附件"
+    "docker-compose 部署配置(部署/自建两份) + README 部署章节",
+    "修复镜像 /data 缺失与 CORS 空值语义两个缺陷, 并加 smoke 守护"
   ],
   "mustReadBeforeContinuing": [
     "docs/aegis/work/2026-09-10-mental-math-app/10-intent.md",

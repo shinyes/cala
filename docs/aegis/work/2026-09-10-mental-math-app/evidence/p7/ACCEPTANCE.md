@@ -213,7 +213,8 @@ YAML 校验输出：
 ## 6. 未验证项
 
 > 本节在收尾后持续更新，见 §6.1（已关闭项）、§6.2（首次发布的多轮迭代）、
-> §6.3（最终成功与独立验签）、§6.4（网络环境对推送的影响）。
+> §6.3（最终成功与独立验签）、§6.4（v0.0.2 修复的部署缺陷）、
+> §6.5（网络环境对推送的影响）。
 
 | # | 项 | 状态 |
 |---|---|---|
@@ -424,7 +425,103 @@ apksigner verify:   Verifies
 
 **这使 A15 从「CI 自述通过」升级为「已发布的产物经独立验签确认」。**
 
-### 6.4 网络环境对推送的影响
+### 6.4 v0.0.2：部署配置暴露的两个真实缺陷
+
+用户要求给出 docker compose 部署配置。为写出**准确**的配置，我去核实了已发布镜像的
+实际配置（而非照 Dockerfile 推断），由此发现两个缺陷。
+
+#### 缺陷 1：镜像中不存在 `/data`，compose 部署必然失败
+
+查询 v0.0.1 镜像的 config 得到：
+
+```
+Entrypoint  = [/cala]         User = nonroot:nonroot
+Env         = CALA_DB=/data/cala.db, CALA_ADDR=:8080
+Healthcheck = null
+```
+
+容器以 `nonroot`(uid 65532) 运行，而 `/data` 是数据库路径。
+**逐层解包 v0.0.1 镜像的全部 13 层**核对，确认其中**不存在 `/data`**
+（也不存在 `/home/nonroot`）。
+
+Docker 挂载**命名卷**时会新建挂载点目录并归属 `root:root`，
+于是 nonroot 无法创建 `cala.db`。实测该情形为**硬失败**：
+
+```
+数据库初始化失败: 连接数据库失败: unable to open database file (14)   （exit 1）
+```
+
+即容器会 crash-loop，不会静默降级。该缺陷在「构建成功 + 镜像已推送」时完全不可见。
+
+**修复**：`COPY --chown=65532:65532` 在镜像中创建 `/data` 并归属 nonroot。
+必须用 `COPY` 而非 `RUN mkdir/chown` —— distroless 内没有 shell，`RUN` 无法执行。
+源目录放一个 `.keep` 占位文件：`COPY` 的语义是拷贝源目录的**内容**，
+对**空**目录是否创建目标目录并应用 `--chown`，文档表述不够明确；放文件即消除歧义。
+
+**双重验证**：
+
+1. **运行时**（CI，真实 Docker）：`release.yml` 新增 `smoke` job，
+   按 compose 的同一配置以命名卷启动容器。8 个步骤全部通过：
+   等待 `/api/healthz` -> 断言未 crash-loop -> 注册首个用户并断言 `becameAdmin=true`
+   -> 重启容器后确认仍能登录（证明数据落在卷中而非容器可写层）。
+   注册会写 `user` 表，因此这就是「nonroot 能写入命名卷」的直接证据。
+2. **镜像层**（本机独立解包 0.0.2 镜像）：
+
+```
+data          type=5 uid=65532 gid=65532 mode=755   <- 修复后存在且属主正确
+data/.keep    type=0 uid=65532 gid=65532 mode=644
+```
+
+0.0.1 中不存在 `data`，0.0.2 中存在且属主为 65532 —— 修复在镜像层面得到确认。
+
+> 这个 `smoke` job 本可以拦下缺陷 1。它的价值正在于此：
+> 「镜像构建成功 + 推送成功」不等于「镜像能跑起来」。
+
+#### 缺陷 2：`CALA_DEV_CORS_ORIGINS=""` 不会关闭 CORS，反而回退到默认来源
+
+写部署配置时把该项设为空以关闭 CORS，随后核对代码发现该假设不成立：
+
+```go
+func env(key, def string) string {
+	if v, ok := os.LookupEnv(key); ok && v != "" {   // 空字符串走 def
+		return v
+	}
+	return def
+}
+```
+
+显式设为空字符串时 `ok == true` 但 `v == ""`，于是走**默认值**分支，
+得到 `localhost:3000` 与 `127.0.0.1:3000` ——
+与 `config.go` 自己第 40 行的注释（「空字符串 -> 空列表，即完全不启用 CORS 放行」）
+**正好相反**。生产部署若照此设置，会以为已关闭 CORS，实际仍放行开发期来源。
+
+**修复**：该变量改用 `os.LookupEnv`，区分「未设置」（用开发期默认）与
+「显式设为空」（空列表，不放行任何来源）。
+
+**回归防护与变异验证**：新增两项测试。为确认测试真的能捕获该缺陷，
+把修复**变异还原**后运行 —— 测试如实失败，并报出错误值：
+
+```
+--- FAIL: TestExplicitEmptyCORSDisablesIt
+    config_test.go:74: 显式设为空时 DevCORSOrigins 应为空,
+    得到 []string{"http://localhost:3000", "http://127.0.0.1:3000"}
+```
+
+这同时证明了缺陷真实存在、且测试能捕获它。恢复修复后文件 SHA-256 与原值一致，
+全部 5 项 config 测试通过。
+
+#### 一处刻意的取舍：不配 healthcheck
+
+`docker-compose.yml` 中**刻意没有**配置 healthcheck。原因：镜像基于 distroless，
+容器内没有 shell、`curl` 或 `wget`，无法编写探活命令。
+可用性由 `restart: unless-stopped` 与宿主机端口探测保障。
+若需要 Docker 级健康检查，需给服务端加一个自检子命令 —— 记录为后续增强，本次不做。
+
+**另一处取舍**：compose 固定版本号而非 `:latest`。
+理由：Cala 用迁移表按序升级 schema，跟随 `:latest` 可能在无预期的情况下应用一次迁移；
+固定版本让升级成为显式动作（改一行 -> pull -> up -d）。
+
+### 6.5 网络环境对推送的影响
 
 第 3 轮的推送一度全部失败：
 

@@ -97,3 +97,11 @@ No evidence has been recorded yet.
 - Source: GitHub Actions run #34570826903 + 本机 apksigner 独立验签
 - Summary: A10/A15 已验证。Release v0.0.1 已发布, 附件 cala-0.0.1-linux-amd64.tar.gz(8.7MB) 与 cala-0.0.1.apk(50.5MB)。独立验证: 下载已发布 APK, 大小与 SHA-256 与 GitHub 记录一致, apksigner 验签通过(v2 scheme, 单签名者, 非 debug 证书)。证书 DN 全为 Unknown(生成时未填), 不影响功能与可升级性
 - Verifier: https://github.com/shinyes/cala/releases/tag/v0.0.1 + 本机 apksigner
+
+## EvidenceBundleDraft
+
+- Artifact key: p7-deploy-defects
+- Type: test
+- Source: 本机逐层解包 ghcr 镜像 + CI smoke job(run #34587246298) + config 单元测试变异验证
+- Summary: 应要求编写 compose 部署配置时，为写出准确配置而核实已发布镜像，发现两个真实缺陷并修复: (1) 镜像中不存在 /data 而容器以 nonroot 运行 -> 命名卷部署必然失败(unable to open database file, 实测 exit 1 硬失败)。已用 COPY --chown=65532 修复; 新增 smoke job 在真实 Docker 中验证, 并本机解包 0.0.2 确认 /data 属主为 65532。 (2) CALA_DEV_CORS_ORIGINS 显式设为空串不会关闭 CORS 而是回退到 localhost:3000, 与代码注释相反。已改用 os.LookupEnv; 新增回归测试并做变异验证(还原后测试如实失败并报出错误值)。v0.0.2 已发布
+- Verifier: CI run #34587246298 (6 job 全 success, smoke 8 步全通过) + 本机镜像解包

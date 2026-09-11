@@ -52,3 +52,4 @@ Entries are workspace records, not authoritative runtime decisions.
 | 2026-09-10 | adr | docs/aegis/adr/ADR-0005-impl-decisions-changed-design.md | ADR-0005 - 实施期确立的四项工程约定（规格未涵盖） |
 | 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-acceptance.json | 2026-09-10-mental-math-app evidence p7-acceptance |
 | 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-release-published.json | 2026-09-10-mental-math-app evidence p7-release-published |
+| 2026-09-11 | artifact | docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-deploy-defects.json | 2026-09-10-mental-math-app evidence p7-deploy-defects |

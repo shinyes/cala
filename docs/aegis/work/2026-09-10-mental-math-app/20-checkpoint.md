@@ -308,3 +308,15 @@
 - New risk signals:
 - 唯一剩余未验证项: APK 能否在真机覆盖安装升级旧版本(需真机与旧版本)。其余外部依赖已全部核实
 - Advisory decision: continue
+
+## Checkpoint Update
+
+- Current todo: v0.0.2 已发布; 部署配置完成
+- Active slice: 交付总结
+- Completed todos:
+- docker-compose 部署配置(部署/自建两份) + README 部署章节
+- 修复镜像 /data 缺失与 CORS 空值语义两个缺陷, 并加 smoke 守护
+- Evidence refs:
+- §6.4
+- Blocked on: 无
+- Next step: 如需可做真机覆盖安装验证
