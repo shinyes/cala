@@ -368,10 +368,26 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v4
+      # 必须**显式指定** artifact 名，不能用不带 name 的 download-artifact（下载全部）。
+      # 原因（实测，run #34569828481）：docker/build-push-action 的
+      # cache-to: type=gha 会在本次运行中创建一个名为
+      #   <owner>~<repo>~<hash>.dockerbuild
+      # 的构建缓存条目，它以 artifact 的形式出现在 runs/{id}/artifacts 列表里。
+      # 「下载全部」会连带去取这个缓存 blob，并当作 zip 解压 ——
+      # 它不是标准 artifact，于是报
+      #   "Unable to download and extract artifact: Artifact download failed after 5 retries"
+      # 连累整个 release job 失败。
+      - name: 下载镜像 tar.gz
+        uses: actions/download-artifact@v4
         with:
+          name: docker-image
           path: dist
-          merge-multiple: true
+
+      - name: 下载 APK
+        uses: actions/download-artifact@v4
+        with:
+          name: apk
+          path: dist
 
       - name: 列出待发布文件
         run: find dist -type f | sort
