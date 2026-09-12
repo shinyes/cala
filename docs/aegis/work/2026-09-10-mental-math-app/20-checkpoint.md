@@ -457,3 +457,15 @@
 - §6.11
 - Blocked on: 无
 - Next step: 如需可发布 v0.0.6
+
+## Checkpoint Update
+
+- Current todo: v0.0.6 已发布并验证
+- Active slice: 交付
+- Completed todos:
+- compose image 升到 0.0.6
+- v0.0.6 发布 + 独立验证(镜像标签/二进制内嵌版本/APK 版本与签名)
+- Evidence refs:
+- §6.12
+- Blocked on: 无
+- Next step: 真机安装验证(联网 + 配置服务器地址 + 覆盖安装 + 改密 + 再来一轮)

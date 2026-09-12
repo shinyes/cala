@@ -169,3 +169,11 @@ No evidence has been recorded yet.
 - Source: 回归测试先失败后通过 + 两次变异验证(第二次给出精确边界) + 真实机型尺寸渲染确认
 - Summary: 用户指出「再来一轮的功能还未实现」。核实: 规格 §9.1 状态图早有要求(错题页 ──「再来一轮」──▶ 同项目、新种子), 是实现漏了。修此过程中又发现两个更严重的缺陷: ① 总结页的「再来一轮」**静默失效** —— 总结页由练习页 pushReplacement 换出, 练习页已销毁, 而按钮回调的是原 State 上的 _startRound(), 其开头 if(!mounted) return 使其取回题目后直接丢弃, 界面毫无反应(比按钮缺失更糟: 按钮在、能点、有按下反馈, 用户只会以为是自己没点到); 修复为导航到全新 PracticePage(pushNewRound), 并用 pushAndRemoveUntil 清掉中间页, 同时删除 SummaryPage.startNewRound 这一缺陷来源参数。 ② 矮屏答错时题目区 RenderFlex 溢出 54px, 被裁掉的正是用户此刻唯一能推进的「下一题」按钮; 修复为可滚动题目区(LayoutBuilder + ConstrainedBox(minHeight) + SingleChildScrollView, 空间充足时仍居中)。变异验证做了两次: 首次塞 400px 内容守卫仍通过 —— 那不是守卫失效而是说明滚动已把内容增长吸收, 溢出在结构上不可能发生; 于是改测回退修复本身, 结果 844/700 通过而 640/600/560/480 如实失败, 既证明溢出真实存在也给出精确边界(旧布局在画布高<=640px 时溢出)。另记录三处测试自身的教训: 答对会 220ms 自动推进故不应找「下一题」、textContaining 匹配歧义、以及测试画布原用默认 800x600 比手机矮得多而测的其实是矮屏分支(已改为 390x844)
 - Verifier: flutter test (新增 9 项) + 分档画布守卫 + 渲染截图
+
+## EvidenceBundleDraft
+
+- Artifact key: p7-v006-released
+- Type: release
+- Source: ghcr registry API 直读标签 + 镜像层解包核对 + Release 附件下载核对 + CI run #13
+- Summary: v0.0.6 发布成功(run #13, 提交 dbbef5a, 六个 job 全 success)。本版内容为「再来一轮」漏实现的补齐与顺带修复的两个缺陷(总结页按钮静默失效、矮屏答错溢出裁掉「下一题」)。独立验证: ① ghcr 直读镜像 OCI 标签 version=0.0.6 且 revision 与 tag 所指提交一致; ② 解包镜像层核对 /cala 二进制内嵌 0.0.6 存在; ③ 下载 APK 核对 —— 大小与 SHA256 与 GitHub 记录逐字一致(80b5706a…), versionName=0.0.6, versionCode=6(递增), INTERNET 权限与 networkSecurityConfig 均在, 签名证书与 v0.0.1~v0.0.5 同一身份。compose 的 image 已同步升到 0.0.6。发布记录至此连续六版签名身份一致且 versionCode 严格递增, 故每版都可直接覆盖安装上一版
+- Verifier: ghcr API + 镜像层解包 + aapt2/apksigner + GitHub Release API

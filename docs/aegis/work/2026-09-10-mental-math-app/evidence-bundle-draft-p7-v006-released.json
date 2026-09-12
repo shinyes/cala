@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "aegis.schema.v0",
+  "artifactKey": "p7-v006-released",
+  "type": "release",
+  "source": "ghcr registry API 直读标签 + 镜像层解包核对 + Release 附件下载核对 + CI run #13",
+  "summary": "v0.0.6 发布成功(run #13, 提交 dbbef5a, 六个 job 全 success)。本版内容为「再来一轮」漏实现的补齐与顺带修复的两个缺陷(总结页按钮静默失效、矮屏答错溢出裁掉「下一题」)。独立验证: ① ghcr 直读镜像 OCI 标签 version=0.0.6 且 revision 与 tag 所指提交一致; ② 解包镜像层核对 /cala 二进制内嵌 0.0.6 存在; ③ 下载 APK 核对 —— 大小与 SHA256 与 GitHub 记录逐字一致(80b5706a…), versionName=0.0.6, versionCode=6(递增), INTERNET 权限与 networkSecurityConfig 均在, 签名证书与 v0.0.1~v0.0.5 同一身份。compose 的 image 已同步升到 0.0.6。发布记录至此连续六版签名身份一致且 versionCode 严格递增, 故每版都可直接覆盖安装上一版",
+  "verifier": "ghcr API + 镜像层解包 + aapt2/apksigner + GitHub Release API"
+}
