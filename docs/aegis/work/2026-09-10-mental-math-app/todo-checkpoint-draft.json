@@ -1,16 +1,18 @@
 {
   "schemaVersion": "aegis.schema.v0",
   "taskId": "2026-09-10-mental-math-app",
-  "currentTodo": "v0.0.5 已发布并验证",
+  "currentTodo": "「再来一轮」已补齐并修复两个缺陷",
   "completedTodos": [
-    "compose image 升到 0.0.5",
-    "v0.0.5 发布 + 独立验证(镜像标签/二进制内嵌版本与改密路由/APK 版本与签名)"
+    "错题页新增「再来一轮」(规格 §9.1 早有要求)",
+    "修复总结页「再来一轮」静默失效(pushReplacement 后回调已销毁 State)",
+    "修复矮屏答错时溢出裁掉「下一题」按钮",
+    "规格 §9.1 补实现约束; 证据 §6.11"
   ],
   "activeSlice": "交付",
   "evidenceRefs": [
-    "§6.10"
+    "§6.11"
   ],
   "blockedOn": "无",
-  "nextStep": "真机安装验证(联网 + 配置服务器地址 + 覆盖安装 + 改密流程)",
+  "nextStep": "如需可发布 v0.0.6",
   "updatedAt": "2026-09-11"
 }

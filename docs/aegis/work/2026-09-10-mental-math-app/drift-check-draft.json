@@ -3,11 +3,11 @@
   "taskId": "2026-09-10-mental-math-app",
   "taskIntentRef": "docs/aegis/work/2026-09-10-mental-math-app/task-intent-draft.json",
   "baselineRefs": [],
-  "scopeStatus": "status: 用户明确要求的新功能, 无范围外扩张(未做邮箱找回、未做管理员重置他人口令等未要求的能力)",
-  "compatStatus": "status: 未改动任何既有端点契约; 新增端点不影响客户端兼容(旧客户端不会调用它); 改密后会话轮换是新增行为, 仅影响调用该端点的客户端",
-  "retirementStatus": "status: 无退役项。新增一处事务与一个 store 方法, 无回退路径、无重复实现",
+  "scopeStatus": "status: 补齐规格已要求但漏实现的功能(「再来一轮」), 并修复实现该功能时暴露的两个缺陷。无范围外扩张",
+  "compatStatus": "status: 删除了 SummaryPage.startNewRound 参数(内部 API, 无外部消费者); 导航改用 pushAndRemoveUntil, 使返回回到 Tab 骨架而非上一轮总结页 —— 这是修正而非破坏。未触及任何后端契约",
+  "retirementStatus": "status: 退役项 = SummaryPage.startNewRound 回调(缺陷来源, 已删除且无残留引用)。无回退路径、无重复实现",
   "newRiskSignals": [
-    "改密端点未做速率限制(需要已认证会话才可调用, 风险低于登录); 管理员重置他人口令未在范围内; 真机验证仍未做"
+    "矮屏上题目区变为可滚动, 极矮屏(如横屏)下用户可能需滚动才能点到「下一题」—— 已由分档守卫确保按钮不被裁掉且始终存在; 真机验证仍未做"
   ],
   "decision": "continue"
 }

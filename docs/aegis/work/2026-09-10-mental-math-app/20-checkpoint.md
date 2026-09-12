@@ -434,3 +434,26 @@
 - §6.10
 - Blocked on: 无
 - Next step: 真机安装验证(联网 + 配置服务器地址 + 覆盖安装 + 改密流程)
+
+## DriftCheckDraft
+
+- Scope status: status: 补齐规格已要求但漏实现的功能(「再来一轮」), 并修复实现该功能时暴露的两个缺陷。无范围外扩张
+- Compatibility status: status: 删除了 SummaryPage.startNewRound 参数(内部 API, 无外部消费者); 导航改用 pushAndRemoveUntil, 使返回回到 Tab 骨架而非上一轮总结页 —— 这是修正而非破坏。未触及任何后端契约
+- Retirement status: status: 退役项 = SummaryPage.startNewRound 回调(缺陷来源, 已删除且无残留引用)。无回退路径、无重复实现
+- New risk signals:
+- 矮屏上题目区变为可滚动, 极矮屏(如横屏)下用户可能需滚动才能点到「下一题」—— 已由分档守卫确保按钮不被裁掉且始终存在; 真机验证仍未做
+- Advisory decision: continue
+
+## Checkpoint Update
+
+- Current todo: 「再来一轮」已补齐并修复两个缺陷
+- Active slice: 交付
+- Completed todos:
+- 错题页新增「再来一轮」(规格 §9.1 早有要求)
+- 修复总结页「再来一轮」静默失效(pushReplacement 后回调已销毁 State)
+- 修复矮屏答错时溢出裁掉「下一题」按钮
+- 规格 §9.1 补实现约束; 证据 §6.11
+- Evidence refs:
+- §6.11
+- Blocked on: 无
+- Next step: 如需可发布 v0.0.6

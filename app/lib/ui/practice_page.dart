@@ -273,7 +273,6 @@ class _PracticePageState extends ConsumerState<PracticePage> {
           state: s,
           cleanupTable: s.cleanupTable,
           tolerance: s.tolerance,
-          startNewRound: widget.isReplay ? null : () => _startRound(),
         ),
       ),
     );
@@ -408,6 +407,29 @@ class _Header extends StatelessWidget {
   }
 }
 
+/// 开新一轮：用一个**全新的** [PracticePage] 替换总结页 / 错题页。
+///
+/// 为什么不用回调：总结页是由练习页 `pushReplacement` 出来的，
+/// 练习页此时**已经被销毁**。若「再来一轮」回调到原练习页 State 上，
+/// 它内部的 `if (!mounted) return;` 会让整件事**静默失效** ——
+/// 用户点了按钮却什么都没发生，还会白发一次网络请求。
+/// （本改动之前正是如此，回归测试见 test/ui/another_round_test.dart。）
+///
+/// 改为导航到一个全新的练习页：它会在 initState 里自行取新一轮题目，
+/// 因此不依赖任何可能已销毁的 State。
+///
+/// 用 pushAndRemoveUntil 而非 push：清掉夹在中间的总结页与错题页，
+/// 否则从新一轮返回会回到上一轮的总结页 —— 那既无意义又容易误操作。
+/// 保留最底层（route.isFirst，即 AppShell），使返回仍能回到 Tab 骨架。
+void pushNewRound(BuildContext context, Project project) {
+  Navigator.of(context).pushAndRemoveUntil(
+    CupertinoPageRoute<void>(
+      builder: (_) => PracticePage(project: project, title: project.title),
+    ),
+    (route) => route.isFirst,
+  );
+}
+
 class _QuestionArea extends StatelessWidget {
   const _QuestionArea({required this.state, required this.onNext});
   final PracticeState state;
@@ -421,11 +443,41 @@ class _QuestionArea extends StatelessWidget {
     final showFeedback = state.awaitingNext && state.lastCorrect != null;
     final correct = state.lastCorrect == true;
 
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+    // 可滚动的题目区。
+    //
+    // 为什么不能只是一个 Column：答错时会出现「答错了 / 正确答案 / 下一题」，
+    // 内容明显变高。键盘固定占约 286px 后，屏幕较矮时（横屏、小屏、
+    // 系统大字号）剩余高度不足以容纳 —— 实测在 600px 高的画布上溢出 54px，
+    // 被裁掉的正是**「下一题」按钮**，也就是用户此刻唯一能推进的操作。
+    //
+    // 用 LayoutBuilder + ConstrainedBox(minHeight) 而不是单纯的
+    // SingleChildScrollView：空间充足时仍要垂直居中（否则题面会贴顶），
+    // 空间不足时才退化为滚动。
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const pad = 20.0;
+        final available = constraints.maxHeight - pad * 2;
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(pad),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: available > 0 ? available : 0),
+            child: _questionColumn(context, q, showFeedback, correct),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _questionColumn(
+    BuildContext context,
+    Question q,
+    bool showFeedback,
+    bool correct,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
           // 暂停时遮蔽题面：避免暂停期间继续思考
           Opacity(
             opacity: state.paused ? 0.12 : 1,
@@ -506,8 +558,7 @@ class _QuestionArea extends StatelessWidget {
               ],
             ),
           ],
-        ],
-      ),
+      ],
     );
   }
 }

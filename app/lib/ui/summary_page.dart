@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import '../api/models.dart';
 import '../scoring/scoring.dart' as scoring;
 import '../state/practice.dart';
+import 'practice_page.dart';
 import 'wrong_answers_page.dart';
 
 /// 总结页（功能 7）：总耗时、平均每题耗时、正确率，点击错题数进入错题页。
@@ -18,7 +19,6 @@ class SummaryPage extends StatelessWidget {
     required this.state,
     required this.cleanupTable,
     required this.tolerance,
-    this.startNewRound,
   });
 
   final Project project;
@@ -26,9 +26,6 @@ class SummaryPage extends StatelessWidget {
   final PracticeState state;
   final Map<String, String> cleanupTable;
   final scoring.Tolerance tolerance;
-
-  /// 「再来一轮」。重练错题进入本页时为 null。
-  final Future<void> Function()? startNewRound;
 
   int get _wrongCount => result.questionCount - result.correctCount;
 
@@ -102,15 +99,10 @@ class SummaryPage extends StatelessWidget {
             ),
 
             const SizedBox(height: 20),
-            if (startNewRound != null)
-              CupertinoButton.filled(
-                onPressed: () async {
-                  // 回到练习页并开新一轮（新种子）
-                  Navigator.of(context).pop();
-                  await startNewRound!();
-                },
-                child: const Text('再来一轮'),
-              ),
+            CupertinoButton.filled(
+              onPressed: () => pushNewRound(context, project),
+              child: const Text('再来一轮'),
+            ),
             const SizedBox(height: 10),
             CupertinoButton(
               onPressed: () => Navigator.of(context).pop(),

@@ -172,23 +172,41 @@ class _WrongAnswersPageState extends ConsumerState<WrongAnswersPage> {
                       ),
                       Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Row(
+                        child: Column(
                           children: [
-                            Expanded(
-                              child: CupertinoButton.filled(
-                                onPressed: items.isEmpty ? null : _redoWrong,
-                                child: const Text('重练错题'),
-                              ),
+                            // 「再来一轮」（规格功能 7 明确要求本页有它）：
+                            // 开一轮**全新**的项目练习（新题目、新种子），
+                            // 与「重练错题」不同 —— 后者只重做本轮错过的题。
+                            CupertinoButton.filled(
+                              onPressed: () =>
+                                  pushNewRound(context, widget.project),
+                              child: const Text('再来一轮'),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: CupertinoButton(
-                                color: CupertinoColors.tertiarySystemFill
-                                    .resolveFrom(context),
-                                onPressed: () =>
-                                    Navigator.of(context).pop(),
-                                child: const Text('返回'),
-                              ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: CupertinoButton(
+                                    color: CupertinoColors
+                                        .tertiarySystemFill
+                                        .resolveFrom(context),
+                                    onPressed:
+                                        items.isEmpty ? null : _redoWrong,
+                                    child: const Text('重练错题'),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: CupertinoButton(
+                                    color: CupertinoColors
+                                        .tertiarySystemFill
+                                        .resolveFrom(context),
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
+                                    child: const Text('返回'),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

@@ -26,6 +26,7 @@ This proof bundle is an advisory Aegis Method Pack record. It does not determine
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p5-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p6-acceptance.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-acceptance.json
+- docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-another-round.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-answer-integer-decimal-only.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-change-password.json
 - docs/aegis/work/2026-09-10-mental-math-app/evidence-bundle-draft-p7-deploy-defects.json
@@ -40,7 +41,7 @@ This proof bundle is an advisory Aegis Method Pack record. It does not determine
 
 ## Drift Check
 
-- Scope status: status: 用户明确要求的新功能, 无范围外扩张(未做邮箱找回、未做管理员重置他人口令等未要求的能力)
-- Compatibility status: status: 未改动任何既有端点契约; 新增端点不影响客户端兼容(旧客户端不会调用它); 改密后会话轮换是新增行为, 仅影响调用该端点的客户端
-- Retirement status: status: 无退役项。新增一处事务与一个 store 方法, 无回退路径、无重复实现
+- Scope status: status: 补齐规格已要求但漏实现的功能(「再来一轮」), 并修复实现该功能时暴露的两个缺陷。无范围外扩张
+- Compatibility status: status: 删除了 SummaryPage.startNewRound 参数(内部 API, 无外部消费者); 导航改用 pushAndRemoveUntil, 使返回回到 Tab 骨架而非上一轮总结页 —— 这是修正而非破坏。未触及任何后端契约
+- Retirement status: status: 退役项 = SummaryPage.startNewRound 回调(缺陷来源, 已删除且无残留引用)。无回退路径、无重复实现
 - Advisory decision: continue

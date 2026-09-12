@@ -161,3 +161,11 @@ No evidence has been recorded yet.
 - Source: ghcr registry API 直读标签 + 镜像层解包核对 + Release 附件下载核对 + CI run #12
 - Summary: v0.0.5 发布成功(run #12, 提交 d61286e, 六个 job 全 success)。独立验证(针对已发布产物本身): ① 从 ghcr 直读镜像 OCI 标签 —— version=0.0.5, revision 与 tag 所指提交一致; ② 解包镜像层取出 /cala 二进制(20.23MB) —— 内嵌版本 0.0.5 存在, 且含本版新增的改密路由字符串 auth/password, 证明新端点在已发布产物中; ③ 下载 APK 核对 —— 大小与 SHA256 与 GitHub 记录逐字一致(e1c1dd64…), versionName=0.0.5, versionCode=5(递增, 可覆盖安装), INTERNET 权限与 networkSecurityConfig 均在(v0.0.3 修复的回归检查), 签名证书 SHA256 与 v0.0.1~v0.0.4 同一身份。compose 的 image 已同步升到 0.0.5。另记录一处检查方法的局限: 曾尝试在二进制里搜中文错误消息佐证改密端点, 结果为 false —— 那是检查方法问题(Go 以 UTF-8 存储, 而过滤器只留 ASCII), 不是镜像问题; 该端点行为已由 8 项 API 测试与 20 项真实 HTTP 端到端检查覆盖
 - Verifier: ghcr API + 镜像层解包 + aapt2/apksigner + GitHub Release API
+
+## EvidenceBundleDraft
+
+- Artifact key: p7-another-round
+- Type: test
+- Source: 回归测试先失败后通过 + 两次变异验证(第二次给出精确边界) + 真实机型尺寸渲染确认
+- Summary: 用户指出「再来一轮的功能还未实现」。核实: 规格 §9.1 状态图早有要求(错题页 ──「再来一轮」──▶ 同项目、新种子), 是实现漏了。修此过程中又发现两个更严重的缺陷: ① 总结页的「再来一轮」**静默失效** —— 总结页由练习页 pushReplacement 换出, 练习页已销毁, 而按钮回调的是原 State 上的 _startRound(), 其开头 if(!mounted) return 使其取回题目后直接丢弃, 界面毫无反应(比按钮缺失更糟: 按钮在、能点、有按下反馈, 用户只会以为是自己没点到); 修复为导航到全新 PracticePage(pushNewRound), 并用 pushAndRemoveUntil 清掉中间页, 同时删除 SummaryPage.startNewRound 这一缺陷来源参数。 ② 矮屏答错时题目区 RenderFlex 溢出 54px, 被裁掉的正是用户此刻唯一能推进的「下一题」按钮; 修复为可滚动题目区(LayoutBuilder + ConstrainedBox(minHeight) + SingleChildScrollView, 空间充足时仍居中)。变异验证做了两次: 首次塞 400px 内容守卫仍通过 —— 那不是守卫失效而是说明滚动已把内容增长吸收, 溢出在结构上不可能发生; 于是改测回退修复本身, 结果 844/700 通过而 640/600/560/480 如实失败, 既证明溢出真实存在也给出精确边界(旧布局在画布高<=640px 时溢出)。另记录三处测试自身的教训: 答对会 220ms 自动推进故不应找「下一题」、textContaining 匹配歧义、以及测试画布原用默认 800x600 比手机矮得多而测的其实是矮屏分支(已改为 390x844)
+- Verifier: flutter test (新增 9 项) + 分档画布守卫 + 渲染截图
