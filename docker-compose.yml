@@ -17,7 +17,7 @@ services:
     # 某次 `docker compose pull` 可能在无预期的情况下应用一次迁移；
     # 迁移虽在事务内执行，但降级需要回退镜像且旧版未必认识新 schema。
     # 固定版本让升级成为一个显式动作：改这一行 -> pull -> up -d。
-    image: ghcr.io/shinyes/cala:0.0.5
+    image: ghcr.io/shinyes/cala:0.0.6
     container_name: cala
     restart: unless-stopped
 
